@@ -1,5 +1,9 @@
 # 🎹 Python 自动弹琴脚本
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/18963a74-329e-42a4-9014-8b454a114203" width="200" height="200" />
+</p>
+
 ## 📖 功能介绍
 本脚本由AI辅助编写，适用于 《开放空间》 Windows 平台，可以根据指定的乐谱文件，自动模拟键盘输入，在游戏中实现“自动弹琴”。
 - **支持乐器**
@@ -92,6 +96,15 @@
    - 点击“开始演奏”
 4. 运行期间切回游戏窗口保持焦点即可听到自动演奏。
 
+5.  mid格式转换：
+   - 将midi文件放到项目根目录下，然后在该目录下打开cmd，在命令行中输入下列命令  
+   ```bash
+   python midi2lrcp.py "xx.mid"
+   ```
+   - 正常情况下会提示`已生成: xx.lrcp`，在同级目录下生成 `.lrcp` 乐谱
+   - 多种乐器合奏的MIDI文件可能无法转换，请选择单个乐器
+   - 目前音符到lrcp映射使用 C4=60 基准，低音区48到高音区83，超过这个范围的音符将不能转换
+
 ---
 
 ## 🤝 多人模式说明 (play_piano_multi.py)
@@ -163,8 +176,18 @@ python play_piano_multi.py
 
 ---
 
+
 ## 📌 示例演奏
 - 运行 `play_piano.py` 选择 `twinkle_sample.lrcp`  
 - 或在多人模式下运行 `play_piano_multi.py` 体验分散后的主旋律  
 
-祝使用愉快！
+祝使用愉快！  
+
+## ▶️ 演示视频
+- [bilibili](https://www.bilibili.com/video/BV11YYizGEVC)
+<p align="center">
+<img width="705" height="539" alt="image" src="https://github.com/user-attachments/assets/4e261f9a-4596-433e-b305-eaac4d21ff78" />
+</p>
+<p align="center">
+<img width="751" height="418" alt="image" src="https://github.com/user-attachments/assets/1eb9ceb4-a710-4ddb-9e59-50930bd66f86" />
+</p>
