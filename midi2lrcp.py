@@ -2,7 +2,7 @@ import os
 import sys
 import pretty_midi
 
-# 音符到lrcp映射表
+# 音符到lrcp映射表（使用 C4=60 基准）
 NOTE_MAP = {
     # 低音区
     48: 'L1', 50: 'L2', 52: 'L3', 53: 'L4', 55: 'L5', 57: 'L6', 59: 'L7',
@@ -12,37 +12,38 @@ NOTE_MAP = {
     72: 'H1', 74: 'H2', 76: 'H3', 77: 'H4', 79: 'H5', 81: 'H6', 83: 'H7',
 }
 
-# 可选：和弦名映射（如需自动识别和弦，可扩展）
-CHORDS = {
-    # (根音, 类型): 和弦名
-    (60, 'major'): 'C',
-    (62, 'minor'): 'Dm',
-    (64, 'minor'): 'Em',
-    (65, 'major'): 'F',
-    (67, 'major'): 'G',
-    (69, 'minor'): 'Am',
-    (67, 'dominant'): 'G7',
-}
+# 可选：和弦识别略（保留接口）
 
 def note_to_token(note):
     return NOTE_MAP.get(note, None)
 
-def midi_to_events(pm):
-    """将MIDI转换为事件列表，格式：(时间, [token, ...])"""
-    events = []
-    # 收集所有音符事件
+def midi_to_note_blocks(pm):
+    """返回 (start, end, token) 列表，保留延音."""
+    blocks = []
     for inst in pm.instruments:
         for note in inst.notes:
-            start = round(note.start, 3)
             token = note_to_token(note.pitch)
-            if token:
-                events.append((start, token))
-    # 按时间分组
-    time_dict = {}
-    for t, token in events:
-        time_dict.setdefault(t, []).append(token)
-    # 排序
-    return sorted(time_dict.items())
+            if not token:
+                continue
+            start = round(note.start, 3)
+            end = round(note.end, 3)
+            if end < start:
+                end = start
+            blocks.append((start, end, token))
+    return blocks
+
+def group_blocks(blocks):
+    """将相同 (start,end) 的多个 token 合并为一行."""
+    groups = {}
+    for start, end, token in blocks:
+        key = (start, end)
+        groups.setdefault(key, []).append(token)
+    out = []
+    for (s, e), tokens in groups.items():
+        tokens.sort()
+        out.append((s, e, tokens))
+    out.sort(key=lambda x: (x[0], x[1]))
+    return out
 
 def format_time(t):
     m = int(t // 60)
@@ -51,10 +52,15 @@ def format_time(t):
 
 def midi_to_lrcp(midi_path, lrcp_path):
     pm = pretty_midi.PrettyMIDI(midi_path)
-    events = midi_to_events(pm)
+    blocks = midi_to_note_blocks(pm)
+    grouped = group_blocks(blocks)
     with open(lrcp_path, 'w', encoding='utf-8') as f:
-        for t, tokens in events:
-            line = f"{format_time(t)} {' '.join(tokens)}\n"
+        for start, end, tokens in grouped:
+            if abs(end - start) < 1e-6:
+                # 短音仍写单时间戳
+                line = f"{format_time(start)} {' '.join(tokens)}\n"
+            else:
+                line = f"{format_time(start)}{format_time(end)} {' '.join(tokens)}\n"
             f.write(line)
     print(f"已生成: {lrcp_path}")
 
