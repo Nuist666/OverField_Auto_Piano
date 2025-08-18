@@ -12,10 +12,11 @@ NOTE_MAP = {
     72: 'H1', 74: 'H2', 76: 'H3', 77: 'H4', 79: 'H5', 81: 'H6', 83: 'H7',
 }
 
-# 可选：和弦识别略（保留接口）
 
+# 可选：和弦识别略（保留接口）
 def note_to_token(note):
     return NOTE_MAP.get(note, None)
+
 
 def midi_to_note_blocks(pm):
     """返回 (start, end, token) 列表，保留延音."""
@@ -32,6 +33,7 @@ def midi_to_note_blocks(pm):
             blocks.append((start, end, token))
     return blocks
 
+
 def group_blocks(blocks):
     """将相同 (start,end) 的多个 token 合并为一行."""
     groups = {}
@@ -45,10 +47,12 @@ def group_blocks(blocks):
     out.sort(key=lambda x: (x[0], x[1]))
     return out
 
+
 def format_time(t):
     m = int(t // 60)
     s = t % 60
     return f"[{m:02d}:{s:06.3f}]"
+
 
 def midi_to_lrcp(midi_path, lrcp_path):
     pm = pretty_midi.PrettyMIDI(midi_path)
@@ -64,14 +68,8 @@ def midi_to_lrcp(midi_path, lrcp_path):
             f.write(line)
     print(f"已生成: {lrcp_path}")
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("用法: python midi2lrcp.py <midi文件>")
-        sys.exit(1)
-    midi_file = sys.argv[1]
-    if not os.path.isfile(midi_file):
-        print("文件不存在:", midi_file)
-        sys.exit(1)
-    name, _ = os.path.splitext(os.path.basename(midi_file))
-    lrcp_file = name + ".lrcp"
+    midi_file = 'example/mid/卡农.mid'
+    lrcp_file = 'example/lrcp/卡农.lrcp'
     midi_to_lrcp(midi_file, lrcp_file)

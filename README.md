@@ -88,7 +88,7 @@
    ```
 2. 以**管理员权限**运行脚本：
    ```bash
-   python play_piano.py
+   python main.py
    ```
 3. 在窗口中：
    - 载入 `.lrcp` 乐谱  
