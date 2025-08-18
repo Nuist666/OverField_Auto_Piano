@@ -1,0 +1,2 @@
+pretty_midi==0.2.10
+pyautogui==0.9.54

@@ -101,7 +101,7 @@
 ## ▶️ 使用方法（单人 / 原版）
 1. 安装依赖
    ```bash
-   pip install pyautogui pretty_midi -i https://mirrors.aliyun.com/pypi/simple/
+   pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
    ```
 2. 以 **管理员权限** 运行脚本：
    ```bash
