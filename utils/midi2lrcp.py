@@ -1,5 +1,3 @@
-import os
-import sys
 import pretty_midi
 
 # 音符到lrcp映射表（使用 C4=60 基准）
