@@ -1,3 +1,4 @@
+import argparse
 import pretty_midi
 
 # 音符到lrcp映射表（使用 C4=60 基准）
@@ -84,6 +85,11 @@ def midi_to_lrcp_text(midi_path: str) -> str:
 
 
 if __name__ == "__main__":
-    midi_file = '../example/mid/卡农.mid'
-    lrcp_file = '../example/lrcp/卡农.lrcp'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_midi', type=str, default='../example/mid/卡农.mid', help='需要转换的mid文件路径')
+    parser.add_argument('--output_lrcp', type=str, default='../example/lrcp/卡农.lrcp', help='转换后保存的lrcp文件路径')
+    args = parser.parse_args()
+
+    midi_file = args.input_midi
+    lrcp_file = args.output_lrcp
     midi_to_lrcp(midi_file, lrcp_file)

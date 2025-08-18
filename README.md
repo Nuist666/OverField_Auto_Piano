@@ -124,6 +124,10 @@
      from utils.midi2lrcp import midi_to_lrcp
      midi_to_lrcp('your.mid', 'out.lrcp')
      ```
+   - 方式 C：以命令行形式运行：
+     ```bash
+     python utils/midi2lrcp.py --input_mid "your.mid" --output_lrcp "out.lrcp"
+     ```
    - 当前映射使用 C4=60 基准，支持音高 48~83（超出范围将被忽略）。
 
 > 如果你需要命令行参数方式，可自行在 `utils/midi2lrcp.py` 中添加 `argparse`（暂未内置）。
