@@ -98,7 +98,6 @@ class BaseApp:
             self.events = self.parse_score(self.score_text)
             if not self.events:
                 raise ValueError("未解析出任何事件，请检查格式。")
-            print(f'101 self.events => {self.events}')
             self.lbl_file.config(text=os.path.basename(path))
             self.lbl_status.config(text=f"已载入，共 {len(self.events)} 个音符/和弦事件。")
             self.btn_start.config(state="normal")

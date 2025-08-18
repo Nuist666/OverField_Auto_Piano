@@ -68,7 +68,6 @@ class AppMulti(BaseApp):
     def update_play_events(self):
         """更新演奏事件（应用偏移）"""
         offsets = self.parse_offsets()
-        print(self.events)
         self.play_events = preprocess(self.events, offsets)
 
     def start_play(self):

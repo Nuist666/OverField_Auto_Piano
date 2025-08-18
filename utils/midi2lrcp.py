@@ -70,13 +70,6 @@ def midi_to_lrcp(midi_path, lrcp_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("用法: python midi2lrcp.py <midi文件>")
-        sys.exit(1)
-    midi_file = sys.argv[1]
-    if not os.path.isfile(midi_file):
-        print("文件不存在:", midi_file)
-        sys.exit(1)
-    name, _ = os.path.splitext(os.path.basename(midi_file))
-    lrcp_file = name + ".lrcp"
+    midi_file = 'example/mid/卡农.mid'
+    lrcp_file = 'example/lrcp/卡农.lrcp'
     midi_to_lrcp(midi_file, lrcp_file)

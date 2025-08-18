@@ -74,7 +74,6 @@ def parse_score(text: str, multi: bool = True) -> List[Event]:
             continue
         events.extend(parse_line(line, multi))
     events.sort(key=lambda e: e.start)
-    print(f'71 events => {events}')
     return events
 
 
