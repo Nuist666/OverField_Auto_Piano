@@ -13,9 +13,27 @@ Windows 钢琴自动演奏 - 可视化脚本 (Tkinter)
 - 需在 Windows 上运行，并确保游戏窗口在“开始演奏”后处于焦点
 - 发送键盘事件默认使用 pyautogui
 """
+import sys
+import ctypes
+from pygetwindow import getWindowsWithTitle
 import tkinter as tk
 
 from src.app_single import AppSingle
+
+
+# ===== 管理员权限检查 =====
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+
+if not is_admin():
+    print("请求管理员权限...")
+    ctypes.windll.shell32.ShellExecuteW(
+        None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+    sys.exit()
 
 
 def main():
