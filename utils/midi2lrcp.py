@@ -69,7 +69,23 @@ def midi_to_lrcp(midi_path, lrcp_path):
     print(f"已生成: {lrcp_path}")
 
 
+def midi_to_lrcp_text(midi_path: str) -> str:
+    """将 MIDI 文件转换为 LRCP 文本（不落盘，直接返回字符串）。
+    保留原有 midi_to_lrcp(midi_path, lrcp_path) 以兼容脚本独立执行。
+    """
+    pm = pretty_midi.PrettyMIDI(midi_path)
+    blocks = midi_to_note_blocks(pm)
+    grouped = group_blocks(blocks)
+    lines = []
+    for start, end, tokens in grouped:
+        if abs(end - start) < 1e-6:
+            lines.append(f"{format_time(start)} {' '.join(tokens)}")
+        else:
+            lines.append(f"{format_time(start)}{format_time(end)} {' '.join(tokens)}")
+    return ("\n".join(lines) + ("\n" if lines else ""))
+
+
 if __name__ == "__main__":
-    midi_file = 'example/mid/卡农.mid'
-    lrcp_file = 'example/lrcp/卡农.lrcp'
+    midi_file = '../example/mid/卡农.mid'
+    lrcp_file = '../example/lrcp/卡农.lrcp'
     midi_to_lrcp(midi_file, lrcp_file)
