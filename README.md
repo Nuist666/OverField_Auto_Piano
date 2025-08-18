@@ -101,14 +101,14 @@
 ## ▶️ 使用方法（单人 / 原版）
 1. 安装依赖
    ```bash
-   pip install pyautogui keyboard pretty_midi
+   pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
    ```
 2. 以 **管理员权限** 运行脚本：
    ```bash
    python main_single.py
    ```
 3. 在窗口中：
-   - 载入 `.lrcp` 乐谱  
+   - 载入 `.lrcp` 乐谱或 `.mid` 文件
    - 设置参数（速度 / 倒计时 / 全局延迟）  
    - 点击“开始演奏”
 4. 切回游戏窗口保持焦点即可听到自动演奏。
@@ -124,9 +124,11 @@
      from utils.midi2lrcp import midi_to_lrcp
      midi_to_lrcp('your.mid', 'out.lrcp')
      ```
+   - 方式 C：以命令行形式运行：
+     ```bash
+     python utils/midi2lrcp.py --input_mid "your.mid" --output_lrcp "out.lrcp"
+     ```
    - 当前映射使用 C4=60 基准，支持音高 48~83（超出范围将被忽略）。
-
-> 如果你需要命令行参数方式，可自行在 `utils/midi2lrcp.py` 中添加 `argparse`（暂未内置）。
 
 ---
 
@@ -166,7 +168,7 @@
 python main_multi.py
 ```
 然后：
-1. 载入原 `.lrcp` 乐谱；
+1. 载入 `.lrcp` 乐谱或 `.mid` 文件；
 2. 调整“多音偏移(ms)”；
 3. 点击开始；
 4. 若仍感觉漏音，可：

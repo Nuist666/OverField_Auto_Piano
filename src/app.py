@@ -84,14 +84,35 @@ class BaseApp:
         self.lbl_status.pack(side="left", padx=10)
 
     def load_score(self):
-        """加载乐谱文件，子类可重写"""
+        """加载乐谱文件，支持 .lrcp 或 .mid；若为 .mid 则先自动转换为 .lrcp 再读取"""
         path = filedialog.askopenfilename(
-            title="选择乐谱文件(.lrcp)",
-            filetypes=[("Piano LRC", "*.lrcp"), ("文本", "*.txt"), ("所有文件", "*.*")]
+            title="选择乐谱或MIDI文件(.lrcp/.mid)",
+            filetypes=[("所有文件", "*.*")]
         )
         if not path:
             return
 
+        ext = os.path.splitext(path)[1].lower()
+        if ext in (".mid", ".midi"):
+            try:
+                from utils.midi2lrcp import midi_to_lrcp_text
+            except Exception as e:
+                messagebox.showerror("载入失败", f"无法导入 MIDI 转换模块，请确认已安装 pretty_midi 等依赖。\n错误：{e}")
+                return
+            try:
+                self.score_text = midi_to_lrcp_text(path)
+                self.events = self.parse_score(self.score_text)
+                if not self.events:
+                    raise ValueError("未解析出任何事件，请检查格式。")
+                self.lbl_file.config(text=os.path.basename(path))
+                self.lbl_status.config(text=f"已载入，共 {len(self.events)} 个音符/和弦事件。")
+                self.btn_start.config(state="normal")
+                return
+            except Exception as e:
+                messagebox.showerror("转换失败", f"MIDI 转换为 LRCP 失败：\n{e}")
+                return
+
+        # 其它情况按文本/谱文件读取
         try:
             with open(path, "r", encoding="utf-8") as f:
                 self.score_text = f.read()

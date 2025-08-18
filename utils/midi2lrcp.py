@@ -1,5 +1,4 @@
-import os
-import sys
+import argparse
 import pretty_midi
 
 # 音符到lrcp映射表（使用 C4=60 基准）
@@ -69,7 +68,28 @@ def midi_to_lrcp(midi_path, lrcp_path):
     print(f"已生成: {lrcp_path}")
 
 
+def midi_to_lrcp_text(midi_path: str) -> str:
+    """将 MIDI 文件转换为 LRCP 文本（不落盘，直接返回字符串）。
+    保留原有 midi_to_lrcp(midi_path, lrcp_path) 以兼容脚本独立执行。
+    """
+    pm = pretty_midi.PrettyMIDI(midi_path)
+    blocks = midi_to_note_blocks(pm)
+    grouped = group_blocks(blocks)
+    lines = []
+    for start, end, tokens in grouped:
+        if abs(end - start) < 1e-6:
+            lines.append(f"{format_time(start)} {' '.join(tokens)}")
+        else:
+            lines.append(f"{format_time(start)}{format_time(end)} {' '.join(tokens)}")
+    return ("\n".join(lines) + ("\n" if lines else ""))
+
+
 if __name__ == "__main__":
-    midi_file = 'example/mid/卡农.mid'
-    lrcp_file = 'example/lrcp/卡农.lrcp'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_midi', type=str, default='../example/mid/卡农.mid', help='需要转换的mid文件路径')
+    parser.add_argument('--output_lrcp', type=str, default='../example/lrcp/卡农.lrcp', help='转换后保存的lrcp文件路径')
+    args = parser.parse_args()
+
+    midi_file = args.input_midi
+    lrcp_file = args.output_lrcp
     midi_to_lrcp(midi_file, lrcp_file)
