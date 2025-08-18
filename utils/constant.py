@@ -5,6 +5,7 @@ LOW_MAP = {str(i): k for i, k in zip(range(1, 8), list("asdfghj"))}  # 低音1-7
 MID_MAP = {str(i): k for i, k in zip(range(1, 8), list("qwertyu"))}  # 中音1-7 -> q w e r t y u
 HIGH_MAP = {str(i): k for i, k in zip(range(1, 8), list("1234567"))}  # 高音1-7 -> 1 2 3 4 5 6 7
 CHORD_MAP = {"C": "z", "Dm": "x", "Em": "c", "F": "v", "G": "b", "Am": "n", "G7": "m"}  # 和弦 -> z x c v b n m
+CHORD_TOKENS = set(CHORD_MAP.keys())
 
 # 允许的音符 token：
 TOKEN_NOTE_RE = re.compile(r"(?:(?:[LMH][1-7])|(?:C|Dm|Em|F|G|Am|G7))")

@@ -23,14 +23,23 @@ class Player(threading.Thread):
         try:
             if not self.events:
                 return
-            # 按速度缩放
-            scaled: List[Event] = [Event(start=e.start / self.speed_ratio, end=e.end / self.speed_ratio, keys=e.keys) for e in self.events]
-            # 构造动作表 (time, type, keys)
+
             actions: List[Tuple[float, str, List[str]]] = []
-            for e in scaled:
-                actions.append((e.start, 'press', e.keys))
-                actions.append((e.end, 'release', e.keys))
+            for e in self.events:
+                start = e.start / self.speed_ratio
+                end = e.end / self.speed_ratio
+
+                if isinstance(e, Event):
+                    keys = e.keys
+                else:  # SimpleEvent
+                    keys = [e.key]
+
+                actions.append((start, 'press', keys))
+                actions.append((end, 'release', keys))
+
+            # 排序动作表
             actions.sort(key=lambda x: x[0])
+
             t0 = time.perf_counter() + self.start_delay
             idx = 0
             while idx < len(actions) and not self._stop.is_set():
