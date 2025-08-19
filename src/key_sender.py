@@ -1,6 +1,9 @@
 import pyautogui
 from typing import List, Dict
 
+pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0  # 发送更密集的键
+
 
 class KeySender:
     def __init__(self):

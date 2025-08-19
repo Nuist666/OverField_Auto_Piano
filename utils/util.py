@@ -14,7 +14,5 @@ def admin_running():
         sys.exit()
 
 
-admin_running()
-
 if __name__ == "__main__":
     pass

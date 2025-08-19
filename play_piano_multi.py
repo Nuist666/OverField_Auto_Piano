@@ -86,7 +86,7 @@ class App:
                 return
             try:
                 self.score_text = midi_to_lrcp_text(path)
-                self.raw_events = parse_score(self.score_text)
+                self.raw_events = parse_score(self.score_text, multi=True)
                 if not self.raw_events:
                     raise ValueError('未解析出任何事件。')
                 self.update_play_events()
