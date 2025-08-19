@@ -23,6 +23,11 @@ class KeySender:
             if cnt == 0:
                 pyautogui.keyUp(k)
 
+    def release_all(self):
+        for k in list(self.active_count.keys()):
+            while self.active_count.get(k, 0) > 0:
+                self.release(k)
+
 
 key_sender = KeySender()
 

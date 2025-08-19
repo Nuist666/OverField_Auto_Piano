@@ -66,7 +66,7 @@ def parse_line(line: str, multi: bool = False) -> List[Event]:
     return events
 
 
-def parse_score(text: str, multi: bool = True) -> List[Event]:
+def parse_score(text: str, multi: bool = False) -> List[Event]:
     events: List[Event] = []
     for raw in text.splitlines():
         line = raw.strip()
