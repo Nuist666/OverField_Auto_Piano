@@ -16,12 +16,14 @@ Windows 钢琴自动演奏 - 多人模式 (去和弦 + 多音时间分散)
 """
 import tkinter as tk
 
-from src.app_multi import AppMulti
+from src.app_multi import MultiApp
+from utils.util import admin_running
 
 
 def main():
+    admin_running()
     root = tk.Tk()
-    AppMulti(root)
+    MultiApp(root)
     root.mainloop()
 
 

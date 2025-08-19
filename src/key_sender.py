@@ -1,6 +1,9 @@
 import pyautogui
 from typing import List, Dict
 
+pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0  # 发送更密集的键
+
 
 class KeySender:
     def __init__(self):
@@ -22,6 +25,11 @@ class KeySender:
             self.active_count[k] = cnt
             if cnt == 0:
                 pyautogui.keyUp(k)
+
+    def release_all(self):
+        for k in list(self.active_count.keys()):
+            while self.active_count.get(k, 0) > 0:
+                self.release(k)
 
 
 key_sender = KeySender()

@@ -1,13 +1,13 @@
 import time
 import threading
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
-from src.event import Event
+from src.event import Event, SimpleEvent
 from src.key_sender import key_sender
 
 
 class Player(threading.Thread):
-    def __init__(self, events: List[Event], start_delay: float, global_latency_ms: int, speed_ratio: float, on_done):
+    def __init__(self, events: List[Union[Event, SimpleEvent]], start_delay: float, global_latency_ms: int, speed_ratio: float, on_done):
         super().__init__(daemon=True)
         self.events = events
         self.start_delay = max(0.0, start_delay)
@@ -24,22 +24,28 @@ class Player(threading.Thread):
             if not self.events:
                 return
 
-            actions: List[Tuple[float, str, List[str]]] = []
+            temp_e = self.events[0]
+            if isinstance(temp_e, Event):
+                is_event = True
+                actions: List[Tuple[float, str, List[str]]] = []
+            else:
+                is_event = False
+                actions: List[Tuple[float, str, str]] = []
+
             for e in self.events:
                 start = e.start / self.speed_ratio
                 end = e.end / self.speed_ratio
 
-                if isinstance(e, Event):
+                if is_event:
                     keys = e.keys
                 else:  # SimpleEvent
-                    keys = [e.key]
+                    keys = e.key
 
                 actions.append((start, 'press', keys))
                 actions.append((end, 'release', keys))
 
             # 排序动作表
             actions.sort(key=lambda x: x[0])
-
             t0 = time.perf_counter() + self.start_delay
             idx = 0
             while idx < len(actions) and not self._stop.is_set():
@@ -57,7 +63,7 @@ class Player(threading.Thread):
                 idx += 1
         finally:
             # 确保释放所有剩余按键
-            key_sender.release(list(key_sender.active_count.keys()))
+            key_sender.release_all()
             if self.on_done:
                 self.on_done()
 

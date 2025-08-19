@@ -15,12 +15,14 @@ Windows 钢琴自动演奏 - 可视化脚本 (Tkinter)
 """
 import tkinter as tk
 
-from src.app_single import AppSingle
+from src.app_single import SingleApp
+from utils.util import admin_running
 
 
 def main():
+    admin_running()
     root = tk.Tk()
-    AppSingle(root)
+    SingleApp(root)
     root.mainloop()
 
 
