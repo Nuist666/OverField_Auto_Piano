@@ -71,7 +71,7 @@ OverField_Auto_Piano/
 │  ├─ dist_single                      # 单人弹琴打包生成的exe存放目录
 │  ├─ logo.ico                         # 生成的exe的图标
 │  └─ upx-5.0.0-win64                  # 打包压缩时所需的依赖
-└─ (运行产物/缓存)                       # 未生成：本项目运行不写入缓存文件
+└─ (运行产物/缓存)                      # 未生成：本项目运行不写入缓存文件
 ```
 > 说明：旧结构中的 `play_piano.py / play_piano_multi.py / main.py / (根) midi2lrcp.py` 已完全被以上模块化结构取代。
 
