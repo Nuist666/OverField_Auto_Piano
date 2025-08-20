@@ -56,13 +56,22 @@ OverField_Auto_Piano/
 │  ├─ app_multi.py                     # 多人模式 UI 与偏移/去和弦逻辑
 │  ├─ event.py                         # Event / SimpleEvent 数据结构
 │  ├─ key_sender.py                    # 按键发送封装(FAILSAFE/Pause 设置)
+│  ├─ key_sender_pyautogui.py
 │  └─ player.py                        # 播放线程调度(排序 + 时间轴执行)
 ├─ utils/
 │  ├─ constant.py                      # 键位映射 & 正则
 │  ├─ parse.py                         # 乐谱解析 + 多人预处理(preprocess)
 │  ├─ midi2lrcp.py                     # MIDI -> LRCP 转换函数 & CLI
 │  └─ util.py                          # admin_running 自动提权函数
-└─ (运行产物/缓存)                     # 未生成：本项目运行不写入缓存文件
+├─ release/
+│  ├─ README.md                        # 打包脚本使用教程
+│  ├─ build_multi.bat                  # 单人弹琴打包脚本
+│  ├─ build_single.bat                 # 多人弹琴打包脚本
+│  ├─ dist_multi                       # 多人弹琴打包生成的exe存放目录
+│  ├─ dist_single                      # 单人弹琴打包生成的exe存放目录
+│  ├─ logo.ico                         # 生成的exe的图标
+│  └─ upx-5.0.0-win64                  # 打包压缩时所需的依赖
+└─ (运行产物/缓存)                      # 未生成：本项目运行不写入缓存文件
 ```
 > 说明：旧结构中的 `play_piano.py / play_piano_multi.py / main.py / (根) midi2lrcp.py` 已完全被以上模块化结构取代。
 
