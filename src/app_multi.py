@@ -29,10 +29,13 @@ class MultiApp(BaseApp):
         # 添加多人模式特有的参数 - 使用正确的行数
         params = self.frm.winfo_children()[1]  # 获取第二个子元素（params）
         tk.Label(params, text="多音偏移(ms):").grid(row=2, column=0, sticky="e")
-        self.ent_offsets = tk.Entry(params, width=20)
+        self.ent_offsets = tk.Entry(params, width=11)
         self.ent_offsets.insert(0, "-15,0,15")
         self.ent_offsets.grid(row=2, column=1, columnspan=3, sticky="w", padx=4)
-        tk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=2, column=4, columnspan=2, sticky="w")
+        tk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=2, column=2, columnspan=2, sticky="w")
+        # 把偏移输入框加入可统一控制的参数控件
+        if hasattr(self, 'param_widgets'):
+            self.param_widgets.append(self.ent_offsets)
 
     def _parse_score(self, score_text: str) -> List[Event]:
         return parse_score(score_text, multi=True)
@@ -77,12 +80,16 @@ class MultiApp(BaseApp):
         
         # 重置进度条
         self.reset_progress()
+        # 禁用参数，避免误输入
+        self.disable_params()
 
         def on_done():
             self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
             self.lbl_status.config(text='完成/已停止')
             self.player = None
+            # 恢复参数
+            self.enable_params()
 
         self.player = Player(self.play_events, countin, latency, speed, on_done, self.update_progress, progress_freq)
         self.player.start()

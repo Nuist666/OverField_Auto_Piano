@@ -33,24 +33,33 @@ class BaseApp:
         params = tk.LabelFrame(self.frm, text="参数")
         params.pack(fill="x", pady=8)
         tk.Label(params, text="速度比例(1.0为原速)：").grid(row=0, column=0, sticky="e")
-        self.ent_speed = tk.Entry(params, width=8)
-        self.ent_speed.insert(0, "1.0")
+        self.ent_speed = ttk.Combobox(params, width=8, state="readonly", values=["0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25", "2.5"])
+        self.ent_speed.set("1.0")
         self.ent_speed.grid(row=0, column=1, sticky="w", padx=6)
         tk.Label(params, text="起始倒计时(秒)：").grid(row=0, column=2, sticky="e")
-        self.ent_countin = tk.Entry(params, width=8)
-        self.ent_countin.insert(0, "2.0")
+        self.ent_countin = ttk.Combobox(params, width=8, state="readonly", values=["0", "1", "2", "3", "4", "5"])
+        self.ent_countin.set("2")
         self.ent_countin.grid(row=0, column=3, sticky="w", padx=6)
         tk.Label(params, text="全局延迟(毫秒)：").grid(row=0, column=4, sticky="e")
-        self.ent_latency = tk.Entry(params, width=8)
+        self.ent_latency = tk.Spinbox(params, width=8, from_=-200, to=200, increment=5)
+        self.ent_latency.delete(0, "end")
         self.ent_latency.insert(0, "0")
         self.ent_latency.grid(row=0, column=5, sticky="w", padx=6)
         
         # 添加进度更新频率配置
         tk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
-        self.ent_progress_freq = tk.Entry(params, width=8)
-        self.ent_progress_freq.insert(0, "1")
+        self.ent_progress_freq = ttk.Combobox(params, width=8, state="readonly", values=["1", "2", "3", "5", "10"])
+        self.ent_progress_freq.set("1")
         self.ent_progress_freq.grid(row=1, column=1, sticky="w", padx=6)
         tk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
+
+        # 记录参数控件，便于统一禁用/启用
+        self.param_widgets = [
+            self.ent_speed,
+            self.ent_countin,
+            self.ent_latency,
+            self.ent_progress_freq,
+        ]
 
     def _create_control_frame(self):
         ctrl = tk.Frame(self.frm)
@@ -77,7 +86,7 @@ class BaseApp:
             "1) 乐谱支持延长音：写法 [起始时间][结束时间] TOKENS\n"
             "2) 单时间戳仍可用作短音：[时间] TOKENS\n"
             "3) 载入后切换到游戏窗口，回到本工具点击开始；\n"
-            "4) 如无响应尝试以管理员身份运行 Python。"
+            "4) 如无响应尝试以管理员身份运行。"
         )).pack(fill="x")
 
     def update_progress(self, current: int, total: int):
@@ -94,6 +103,24 @@ class BaseApp:
         """重置进度条"""
         self.progress_bar['value'] = 0
         self.lbl_progress.config(text="进度：0%")
+
+    def set_params_enabled(self, enabled: bool):
+        """统一设置参数控件的启用/禁用。Combobox 用 readonly 表示可选但不可输入。"""
+        for w in getattr(self, 'param_widgets', []):
+            try:
+                # ttk.Combobox 使用 readonly，其他控件使用 normal/disabled
+                if isinstance(w, ttk.Combobox):
+                    w.config(state="readonly" if enabled else "disabled")
+                else:
+                    w.config(state="normal" if enabled else "disabled")
+            except Exception:
+                pass
+
+    def disable_params(self):
+        self.set_params_enabled(False)
+
+    def enable_params(self):
+        self.set_params_enabled(True)
 
     def load_score(self):
         """加载乐谱文件，支持 .lrcp 或 .mid；若为 .mid 则先自动转换为 .lrcp 再读取"""
@@ -150,6 +177,7 @@ class BaseApp:
             self.player.stop()
             self.player = None
             self.reset_progress()
+            self.enable_params()
             # 恢复按钮与状态
             self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
