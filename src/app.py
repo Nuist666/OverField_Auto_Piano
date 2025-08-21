@@ -55,7 +55,7 @@ class BaseApp:
     def _create_control_frame(self):
         ctrl = tk.Frame(self.frm)
         ctrl.pack(fill="x", pady=6)
-        self.btn_start = tk.Button(ctrl, text="开始演奏", command=self.start_play, state="disabled")
+        self.btn_start = tk.Button(ctrl, text="开始演奏", command=self.toggle_play_pause, state="disabled")
         self.btn_start.pack(side="left", padx=4)
         self.btn_stop = tk.Button(ctrl, text="停止", command=self.stop_play, state="disabled")
         self.btn_stop.pack(side="left", padx=4)
@@ -150,6 +150,34 @@ class BaseApp:
             self.player.stop()
             self.player = None
             self.reset_progress()
+            # 恢复按钮与状态
+            self.btn_start.config(state="normal", text="开始演奏")
+            self.btn_stop.config(state="disabled")
+            self.lbl_status.config(text="完成/已停止")
+
+    def toggle_play_pause(self):
+        """开始/暂停/继续 切换。若未开始则调用子类的 start_play。"""
+        if not self.player:
+            # 未开始：启动
+            self.start_play()
+            return
+        # 已有 player：切换暂停/继续
+        try:
+            if hasattr(self.player, 'is_paused') and self.player.is_paused():
+                self.player.resume()
+                self.btn_start.config(text="暂停")
+                self.lbl_status.config(text="演奏中…")
+            else:
+                # 进入暂停
+                if hasattr(self.player, 'pause'):
+                    self.player.pause()
+                    self.btn_start.config(text="继续")
+                    self.lbl_status.config(text="已暂停")
+        except Exception:
+            try:
+                self.stop_play()
+            except Exception:
+                pass
 
 
 if __name__ == '__main__':

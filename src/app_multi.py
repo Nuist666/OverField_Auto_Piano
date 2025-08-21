@@ -70,7 +70,8 @@ class MultiApp(BaseApp):
 
         # 每次开始前按当前偏移重新生成
         self.update_play_events()
-        self.btn_start.config(state="disabled")
+        # 开始后：启用停止按钮；开始按钮显示为“暂停”并保持可点击
+        self.btn_start.config(state="normal", text="暂停")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text=f'演奏中… (总 {len(self.play_events)} 单音事件)')
         
@@ -78,9 +79,10 @@ class MultiApp(BaseApp):
         self.reset_progress()
 
         def on_done():
-            self.btn_start.config(state="normal")
+            self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
             self.lbl_status.config(text='完成/已停止')
+            self.player = None
 
         self.player = Player(self.play_events, countin, latency, speed, on_done, self.update_progress, progress_freq)
         self.player.start()

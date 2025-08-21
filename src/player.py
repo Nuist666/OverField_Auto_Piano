@@ -14,12 +14,38 @@ class Player(threading.Thread):
         self.global_latency = max(0, global_latency_ms) / 1000.0
         self.speed_ratio = max(0.05, speed_ratio)
         self._stop = threading.Event()
+        self._pause = threading.Event()
+        self._pause_started_at: Optional[float] = None
+        self._paused_total: float = 0.0
         self.on_done = on_done
         self.progress_callback = progress_callback
         self.progress_update_freq = max(1, progress_update_freq)  # 确保至少为1
 
     def stop(self):
         self._stop.set()
+        # 同时解除暂停，确保线程可以尽快退出
+        if self._pause.is_set():
+            self._pause.clear()
+            if self._pause_started_at is not None:
+                self._paused_total += time.perf_counter() - self._pause_started_at
+                self._pause_started_at = None
+
+    def pause(self):
+        if not self._pause.is_set():
+            self._pause.set()
+            self._pause_started_at = time.perf_counter()
+            # 暂停时立即释放所有按键，避免长按持续
+            key_sender.release_all()
+
+    def resume(self):
+        if self._pause.is_set():
+            self._pause.clear()
+            if self._pause_started_at is not None:
+                self._paused_total += time.perf_counter() - self._pause_started_at
+                self._pause_started_at = None
+
+    def is_paused(self) -> bool:
+        return self._pause.is_set()
 
     def run(self):
         total_actions = 0
@@ -54,8 +80,12 @@ class Player(threading.Thread):
             total_actions = len(actions)
 
             while idx < total_actions and not self._stop.is_set():
+                # 暂停时阻塞循环，并在恢复后按相对时间继续
+                if self._pause.is_set():
+                    time.sleep(0.05)
+                    continue
                 now = time.perf_counter()
-                target = t0 + actions[idx][0] + self.global_latency
+                target = t0 + actions[idx][0] + self.global_latency + self._paused_total
                 wait = target - now
                 if wait > 0:
                     time.sleep(min(wait, 0.01))

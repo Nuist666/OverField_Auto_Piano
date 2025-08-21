@@ -61,7 +61,7 @@ class SingleApp(BaseApp):
         except:
             progress_freq = 1
 
-        self.btn_start.config(state="disabled")
+        self.btn_start.config(state="normal", text="暂停")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text="演奏中…（切到游戏保持焦点）")
         
@@ -69,9 +69,10 @@ class SingleApp(BaseApp):
         self.reset_progress()
 
         def on_done():
-            self.btn_start.config(state="normal")
+            self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
             self.lbl_status.config(text="完成/已停止")
+            self.player = None
 
         self.player = Player(self.events, countin, latency, speed, on_done, self.update_progress, progress_freq)
         self.player.start()
