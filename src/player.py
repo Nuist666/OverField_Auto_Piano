@@ -1,25 +1,54 @@
 import time
 import threading
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional, Callable
 
 from src.event import Event, SimpleEvent
 from src.key_sender import key_sender
 
 
 class Player(threading.Thread):
-    def __init__(self, events: List[Union[Event, SimpleEvent]], start_delay: float, global_latency_ms: int, speed_ratio: float, on_done):
+    def __init__(self, events: List[Union[Event, SimpleEvent]], start_delay: float, global_latency_ms: int, speed_ratio: float, on_done, progress_callback: Optional[Callable[[int, int], None]] = None, progress_update_freq: int = 1):
         super().__init__(daemon=True)
         self.events = events
         self.start_delay = max(0.0, start_delay)
         self.global_latency = max(0, global_latency_ms) / 1000.0
         self.speed_ratio = max(0.05, speed_ratio)
         self._stop = threading.Event()
+        self._pause = threading.Event()
+        self._pause_started_at: Optional[float] = None
+        self._paused_total: float = 0.0
         self.on_done = on_done
+        self.progress_callback = progress_callback
+        self.progress_update_freq = max(1, progress_update_freq)  # 确保至少为1
 
     def stop(self):
         self._stop.set()
+        # 同时解除暂停，确保线程可以尽快退出
+        if self._pause.is_set():
+            self._pause.clear()
+            if self._pause_started_at is not None:
+                self._paused_total += time.perf_counter() - self._pause_started_at
+                self._pause_started_at = None
+
+    def pause(self):
+        if not self._pause.is_set():
+            self._pause.set()
+            self._pause_started_at = time.perf_counter()
+            # 暂停时立即释放所有按键，避免长按持续
+            key_sender.release_all()
+
+    def resume(self):
+        if self._pause.is_set():
+            self._pause.clear()
+            if self._pause_started_at is not None:
+                self._paused_total += time.perf_counter() - self._pause_started_at
+                self._pause_started_at = None
+
+    def is_paused(self) -> bool:
+        return self._pause.is_set()
 
     def run(self):
+        total_actions = 0
         try:
             if not self.events:
                 return
@@ -48,9 +77,15 @@ class Player(threading.Thread):
             actions.sort(key=lambda x: x[0])
             t0 = time.perf_counter() + self.start_delay
             idx = 0
-            while idx < len(actions) and not self._stop.is_set():
+            total_actions = len(actions)
+
+            while idx < total_actions and not self._stop.is_set():
+                # 暂停时阻塞循环，并在恢复后按相对时间继续
+                if self._pause.is_set():
+                    time.sleep(0.05)
+                    continue
                 now = time.perf_counter()
-                target = t0 + actions[idx][0] + self.global_latency
+                target = t0 + actions[idx][0] + self.global_latency + self._paused_total
                 wait = target - now
                 if wait > 0:
                     time.sleep(min(wait, 0.01))
@@ -61,9 +96,17 @@ class Player(threading.Thread):
                 else:
                     key_sender.release(keys)
                 idx += 1
+                
+                # 根据用户配置的频率更新进度
+                if self.progress_callback and (idx % self.progress_update_freq == 0 or idx == total_actions):
+                    self.progress_callback(idx, total_actions)
+                    
         finally:
             # 确保释放所有剩余按键
             key_sender.release_all()
+            # 报告完成进度
+            if self.progress_callback:
+                self.progress_callback(total_actions, total_actions)
             if self.on_done:
                 self.on_done()
 

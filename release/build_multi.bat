@@ -22,7 +22,7 @@ pyinstaller --onefile --windowed --icon=logo.ico --name "%EXE_NAME%" ../main_mul
 :: Modify the .spec file to include additional files and hiddenimports
 powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'datas=\[', 'datas=[(''../src'', ''src''), (''../utils'', ''utils'')' | Set-Content %EXE_NAME%.spec"
 :: powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pyautogui'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
-powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
+powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
 
 :: Build again using the modified .spec file
 pyinstaller "%EXE_NAME%.spec" --distpath "dist_multi" --upx-dir=upx-5.0.0-win64

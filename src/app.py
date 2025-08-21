@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from typing import List, Optional
 
 from src.player import Player
@@ -33,27 +33,51 @@ class BaseApp:
         params = tk.LabelFrame(self.frm, text="参数")
         params.pack(fill="x", pady=8)
         tk.Label(params, text="速度比例(1.0为原速)：").grid(row=0, column=0, sticky="e")
-        self.ent_speed = tk.Entry(params, width=8)
-        self.ent_speed.insert(0, "1.0")
+        self.ent_speed = ttk.Combobox(params, width=8, state="readonly", values=["0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25", "2.5"])
+        self.ent_speed.set("1.0")
         self.ent_speed.grid(row=0, column=1, sticky="w", padx=6)
         tk.Label(params, text="起始倒计时(秒)：").grid(row=0, column=2, sticky="e")
-        self.ent_countin = tk.Entry(params, width=8)
-        self.ent_countin.insert(0, "2.0")
+        self.ent_countin = ttk.Combobox(params, width=8, state="readonly", values=["0", "1", "2", "3", "4", "5"])
+        self.ent_countin.set("2")
         self.ent_countin.grid(row=0, column=3, sticky="w", padx=6)
         tk.Label(params, text="全局延迟(毫秒)：").grid(row=0, column=4, sticky="e")
-        self.ent_latency = tk.Entry(params, width=8)
+        self.ent_latency = tk.Spinbox(params, width=8, from_=-200, to=200, increment=5)
+        self.ent_latency.delete(0, "end")
         self.ent_latency.insert(0, "0")
         self.ent_latency.grid(row=0, column=5, sticky="w", padx=6)
+        
+        # 添加进度更新频率配置
+        tk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
+        self.ent_progress_freq = ttk.Combobox(params, width=8, state="readonly", values=["1", "2", "3", "5", "10"])
+        self.ent_progress_freq.set("1")
+        self.ent_progress_freq.grid(row=1, column=1, sticky="w", padx=6)
+        tk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
+
+        # 记录参数控件，便于统一禁用/启用
+        self.param_widgets = [
+            self.ent_speed,
+            self.ent_countin,
+            self.ent_latency,
+            self.ent_progress_freq,
+        ]
 
     def _create_control_frame(self):
         ctrl = tk.Frame(self.frm)
         ctrl.pack(fill="x", pady=6)
-        self.btn_start = tk.Button(ctrl, text="开始演奏", command=self.start_play, state="disabled")
+        self.btn_start = tk.Button(ctrl, text="开始演奏", command=self.toggle_play_pause, state="disabled")
         self.btn_start.pack(side="left", padx=4)
         self.btn_stop = tk.Button(ctrl, text="停止", command=self.stop_play, state="disabled")
         self.btn_stop.pack(side="left", padx=4)
         self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
+        
+        # 添加进度条框架
+        progress_frame = tk.Frame(self.frm)
+        progress_frame.pack(fill="x", pady=4)
+        self.lbl_progress = tk.Label(progress_frame, text="进度：0%")
+        self.lbl_progress.pack(side="left", padx=10)
+        self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate', length=300)
+        self.progress_bar.pack(side="left", padx=4, fill="x", expand=True)
 
     def _create_tips_frame(self):
         tips = tk.LabelFrame(self.frm, text="使用提示")
@@ -62,8 +86,41 @@ class BaseApp:
             "1) 乐谱支持延长音：写法 [起始时间][结束时间] TOKENS\n"
             "2) 单时间戳仍可用作短音：[时间] TOKENS\n"
             "3) 载入后切换到游戏窗口，回到本工具点击开始；\n"
-            "4) 如无响应尝试以管理员身份运行 Python。"
+            "4) 如无响应尝试以管理员身份运行。"
         )).pack(fill="x")
+
+    def update_progress(self, current: int, total: int):
+        """更新进度条和进度标签"""
+        if total > 0:
+            percentage = int((current / total) * 100)
+            self.progress_bar['value'] = percentage
+            self.lbl_progress.config(text=f"进度：{percentage}% ({current}/{total})")
+        else:
+            self.progress_bar['value'] = 0
+            self.lbl_progress.config(text="进度：0%")
+
+    def reset_progress(self):
+        """重置进度条"""
+        self.progress_bar['value'] = 0
+        self.lbl_progress.config(text="进度：0%")
+
+    def set_params_enabled(self, enabled: bool):
+        """统一设置参数控件的启用/禁用。Combobox 用 readonly 表示可选但不可输入。"""
+        for w in getattr(self, 'param_widgets', []):
+            try:
+                # ttk.Combobox 使用 readonly，其他控件使用 normal/disabled
+                if isinstance(w, ttk.Combobox):
+                    w.config(state="readonly" if enabled else "disabled")
+                else:
+                    w.config(state="normal" if enabled else "disabled")
+            except Exception:
+                pass
+
+    def disable_params(self):
+        self.set_params_enabled(False)
+
+    def enable_params(self):
+        self.set_params_enabled(True)
 
     def load_score(self):
         """加载乐谱文件，支持 .lrcp 或 .mid；若为 .mid 则先自动转换为 .lrcp 再读取"""
@@ -119,6 +176,36 @@ class BaseApp:
         if self.player:
             self.player.stop()
             self.player = None
+            self.reset_progress()
+            self.enable_params()
+            # 恢复按钮与状态
+            self.btn_start.config(state="normal", text="开始演奏")
+            self.btn_stop.config(state="disabled")
+            self.lbl_status.config(text="完成/已停止")
+
+    def toggle_play_pause(self):
+        """开始/暂停/继续 切换。若未开始则调用子类的 start_play。"""
+        if not self.player:
+            # 未开始：启动
+            self.start_play()
+            return
+        # 已有 player：切换暂停/继续
+        try:
+            if hasattr(self.player, 'is_paused') and self.player.is_paused():
+                self.player.resume()
+                self.btn_start.config(text="暂停")
+                self.lbl_status.config(text="演奏中…")
+            else:
+                # 进入暂停
+                if hasattr(self.player, 'pause'):
+                    self.player.pause()
+                    self.btn_start.config(text="继续")
+                    self.lbl_status.config(text="已暂停")
+        except Exception:
+            try:
+                self.stop_play()
+            except Exception:
+                pass
 
 
 if __name__ == '__main__':

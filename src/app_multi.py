@@ -26,13 +26,16 @@ class MultiApp(BaseApp):
             '4) 适度调整偏移可减少漏音（建议 -20~20 范围内微调）。'
         )).pack(fill="x")
 
-        # 添加多人模式特有的参数
+        # 添加多人模式特有的参数 - 使用正确的行数
         params = self.frm.winfo_children()[1]  # 获取第二个子元素（params）
-        tk.Label(params, text="多音偏移(ms):").grid(row=1, column=0, sticky="e")
-        self.ent_offsets = tk.Entry(params, width=20)
+        tk.Label(params, text="多音偏移(ms):").grid(row=2, column=0, sticky="e")
+        self.ent_offsets = tk.Entry(params, width=11)
         self.ent_offsets.insert(0, "-15,0,15")
-        self.ent_offsets.grid(row=1, column=1, columnspan=3, sticky="w", padx=4)
-        tk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=1, column=4, columnspan=2, sticky="w")
+        self.ent_offsets.grid(row=2, column=1, columnspan=3, sticky="w", padx=4)
+        tk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=2, column=2, columnspan=2, sticky="w")
+        # 把偏移输入框加入可统一控制的参数控件
+        if hasattr(self, 'param_widgets'):
+            self.param_widgets.append(self.ent_offsets)
 
     def _parse_score(self, score_text: str) -> List[Event]:
         return parse_score(score_text, multi=True)
@@ -62,19 +65,33 @@ class MultiApp(BaseApp):
             latency = int(float(self.ent_latency.get()))
         except:
             latency = 0
+            
+        try:
+            progress_freq = int(float(self.ent_progress_freq.get()))
+        except:
+            progress_freq = 1
 
         # 每次开始前按当前偏移重新生成
         self.update_play_events()
-        self.btn_start.config(state="disabled")
+        # 开始后：启用停止按钮；开始按钮显示为“暂停”并保持可点击
+        self.btn_start.config(state="normal", text="暂停")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text=f'演奏中… (总 {len(self.play_events)} 单音事件)')
+        
+        # 重置进度条
+        self.reset_progress()
+        # 禁用参数，避免误输入
+        self.disable_params()
 
         def on_done():
-            self.btn_start.config(state="normal")
+            self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
             self.lbl_status.config(text='完成/已停止')
+            self.player = None
+            # 恢复参数
+            self.enable_params()
 
-        self.player = Player(self.play_events, countin, latency, speed, on_done)
+        self.player = Player(self.play_events, countin, latency, speed, on_done, self.update_progress, progress_freq)
         self.player.start()
 
     def parse_offsets(self) -> List[int]:
