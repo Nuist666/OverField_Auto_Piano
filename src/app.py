@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from typing import List, Optional
 
 from src.player import Player
@@ -44,6 +44,13 @@ class BaseApp:
         self.ent_latency = tk.Entry(params, width=8)
         self.ent_latency.insert(0, "0")
         self.ent_latency.grid(row=0, column=5, sticky="w", padx=6)
+        
+        # 添加进度更新频率配置
+        tk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
+        self.ent_progress_freq = tk.Entry(params, width=8)
+        self.ent_progress_freq.insert(0, "1")
+        self.ent_progress_freq.grid(row=1, column=1, sticky="w", padx=6)
+        tk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
 
     def _create_control_frame(self):
         ctrl = tk.Frame(self.frm)
@@ -54,6 +61,14 @@ class BaseApp:
         self.btn_stop.pack(side="left", padx=4)
         self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
+        
+        # 添加进度条框架
+        progress_frame = tk.Frame(self.frm)
+        progress_frame.pack(fill="x", pady=4)
+        self.lbl_progress = tk.Label(progress_frame, text="进度：0%")
+        self.lbl_progress.pack(side="left", padx=10)
+        self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate', length=300)
+        self.progress_bar.pack(side="left", padx=4, fill="x", expand=True)
 
     def _create_tips_frame(self):
         tips = tk.LabelFrame(self.frm, text="使用提示")
@@ -64,6 +79,21 @@ class BaseApp:
             "3) 载入后切换到游戏窗口，回到本工具点击开始；\n"
             "4) 如无响应尝试以管理员身份运行 Python。"
         )).pack(fill="x")
+
+    def update_progress(self, current: int, total: int):
+        """更新进度条和进度标签"""
+        if total > 0:
+            percentage = int((current / total) * 100)
+            self.progress_bar['value'] = percentage
+            self.lbl_progress.config(text=f"进度：{percentage}% ({current}/{total})")
+        else:
+            self.progress_bar['value'] = 0
+            self.lbl_progress.config(text="进度：0%")
+
+    def reset_progress(self):
+        """重置进度条"""
+        self.progress_bar['value'] = 0
+        self.lbl_progress.config(text="进度：0%")
 
     def load_score(self):
         """加载乐谱文件，支持 .lrcp 或 .mid；若为 .mid 则先自动转换为 .lrcp 再读取"""
@@ -119,6 +149,7 @@ class BaseApp:
         if self.player:
             self.player.stop()
             self.player = None
+            self.reset_progress()
 
 
 if __name__ == '__main__':

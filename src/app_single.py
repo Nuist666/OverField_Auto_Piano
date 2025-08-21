@@ -55,17 +55,25 @@ class SingleApp(BaseApp):
             latency = int(float(self.ent_latency.get()))
         except:
             latency = 0
+            
+        try:
+            progress_freq = int(float(self.ent_progress_freq.get()))
+        except:
+            progress_freq = 1
 
         self.btn_start.config(state="disabled")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text="演奏中…（切到游戏保持焦点）")
+        
+        # 重置进度条
+        self.reset_progress()
 
         def on_done():
             self.btn_start.config(state="normal")
             self.btn_stop.config(state="disabled")
             self.lbl_status.config(text="完成/已停止")
 
-        self.player = Player(self.events, countin, latency, speed, on_done)
+        self.player = Player(self.events, countin, latency, speed, on_done, self.update_progress, progress_freq)
         self.player.start()
 
 
