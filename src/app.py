@@ -8,6 +8,7 @@ from collections import deque
 
 from src.player import Player
 from src.event import Event
+from utils.key_cast_overlay_demo import KeyCastOverlay
 
 
 class BaseApp:
@@ -29,12 +30,26 @@ class BaseApp:
         if create_key_display:
             self._create_key_display_frame()
         
-        # 初始化按键显示相关变量
+        # 初始化按键显示相关变量（窗口内）
         self.keys = deque(maxlen=14)  # 显示最近maxlen个按键
         self.last_press_time = {}
         self.running = True
+
+        # 覆盖层（窗口外）默认设置与实例（默认开启）
+        self.keycast_settings = {
+            "enabled": True,
+            "opacity": 0.7,
+            "max_keys": 5,
+            "display_time": 2.0,
+            "position": "bottom_center",
+        }
+        # 在主 Tk 上创建一个无边框置顶的 Toplevel 作为覆盖层
+        try:
+            self.keycast_overlay = KeyCastOverlay(self.root, self.keycast_settings)
+        except Exception:
+            self.keycast_overlay = None
         
-        # 启动按键监听
+        # 启动按键监听（窗口内展示）
         self._start_key_listener()
 
     def _create_file_bar(self):
@@ -83,6 +98,10 @@ class BaseApp:
         self.btn_start.pack(side="left", padx=4)
         self.btn_stop = tk.Button(ctrl, text="停止", command=self.stop_play, state="disabled")
         self.btn_stop.pack(side="left", padx=4)
+        # 新增：按键显示设置按钮
+        self.btn_keycast = tk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
+        self.btn_keycast.pack(side="left", padx=4)
+        
         self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
         
@@ -105,7 +124,7 @@ class BaseApp:
         )).pack(fill="x")
 
     def _create_key_display_frame(self):
-        """创建按键显示框架"""
+        """创建按键显示框架（窗口内）"""
         key_frame = tk.LabelFrame(self.frm, text="按键显示")
         key_frame.pack(fill="x", pady=8)
         
@@ -124,10 +143,85 @@ class BaseApp:
         self.lbl_keys.pack(fill="x", padx=4, pady=4)
         
         # 添加说明文字
-        tk.Label(key_frame, text="实时显示当前按下的按键", font=("微软雅黑", 9), fg="gray").pack(anchor="w", padx=4)
+        tk.Label(key_frame, text="实时显示当前按下的按键 (窗口内)", font=("微软雅黑", 9), fg="gray").pack(anchor="w", padx=4)
+
+    def open_keycast_settings(self):
+        """打开覆盖层设置窗口"""
+        # 备份当前设置用于取消恢复
+        current = self.keycast_settings.copy()
+
+        win = tk.Toplevel(self.root)
+        win.title("按键显示设置")
+        win.transient(self.root)
+        win.grab_set()
+
+        # 预设 -> 内部值映射
+        pos_map = {
+            "左上方": "top_left",
+            "右上方": "top_right",
+            "左下方": "bottom_left",
+            "右下方": "bottom_right",
+            "顶部居中": "top_center",
+            "底部居中": "bottom_center",
+        }
+        pos_map_rev = {v: k for k, v in pos_map.items()}
+
+        # 控件变量
+        var_enabled = tk.BooleanVar(value=bool(current.get("enabled", True)))
+        var_opacity = tk.DoubleVar(value=float(current.get("opacity", 0.7)))
+        var_max_keys = tk.IntVar(value=int(current.get("max_keys", 5)))
+        var_disp_time = tk.DoubleVar(value=float(current.get("display_time", 2.0)))
+        var_position = tk.StringVar(value=pos_map_rev.get(current.get("position", "bottom_center"), "底部居中"))
+
+        row = 0
+        ttk.Checkbutton(win, text="打开实时按键显示", variable=var_enabled).grid(row=row, column=0, columnspan=2, sticky="w", padx=10, pady=8)
+        row += 1
+
+        ttk.Label(win, text="透明度(0.2~1.0)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
+        tk.Scale(win, from_=0.2, to=1.0, orient="horizontal", resolution=0.05, variable=var_opacity, length=200).grid(row=row, column=1, sticky="w", padx=6)
+        row += 1
+
+        ttk.Label(win, text="显示最近几个按键：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
+        tk.Spinbox(win, from_=1, to=20, textvariable=var_max_keys, width=8).grid(row=row, column=1, sticky="w", padx=6)
+        row += 1
+
+        ttk.Label(win, text="每个按键显示(秒)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
+        tk.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8).grid(row=row, column=1, sticky="w", padx=6)
+        row += 1
+
+        ttk.Label(win, text="位置：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
+        ttk.Combobox(win, state="readonly", values=list(pos_map.keys()), textvariable=var_position, width=14).grid(row=row, column=1, sticky="w", padx=6)
+        row += 1
+
+        # 按钮
+        btns = tk.Frame(win)
+        btns.grid(row=row, column=0, columnspan=2, pady=10)
+        
+        def on_ok():
+            new_cfg = {
+                "opacity": max(0.2, min(1.0, float(var_opacity.get()))),
+                "max_keys": max(1, min(50, int(var_max_keys.get()))),
+                "display_time": max(0.1, float(var_disp_time.get())),
+                "position": pos_map.get(var_position.get(), "bottom_center"),
+            }
+            self.keycast_settings.update(new_cfg)
+            # 应用到覆盖层
+            if self.keycast_overlay:
+                self.keycast_overlay.apply_settings(self.keycast_settings)
+                self.keycast_overlay.set_enabled(bool(var_enabled.get()))
+            # 同步到记录
+            self.keycast_settings["enabled"] = bool(var_enabled.get())
+            win.destroy()
+        
+        def on_cancel():
+            # 取消不更改设置
+            win.destroy()
+        
+        ttk.Button(btns, text="确认", command=on_ok).pack(side="left", padx=8)
+        ttk.Button(btns, text="取消", command=on_cancel).pack(side="left", padx=8)
 
     def _start_key_listener(self):
-        """启动按键监听线程"""
+        """启动按键监听线程（窗口内展示）"""
         try:
             from pynput import keyboard
             
@@ -151,15 +245,16 @@ class BaseApp:
             
         except ImportError:
             # 如果没有安装pynput，显示提示信息
-            self.lbl_keys.config(
-                text="需要安装 pynput 模块\npip install pynput",
-                font=("微软雅黑", 10),
-                fg="red",
-                bg="lightgray"
-            )
+            if hasattr(self, 'lbl_keys'):
+                self.lbl_keys.config(
+                    text="需要安装 pynput 模块\npip install pynput",
+                    font=("微软雅黑", 10),
+                    fg="red",
+                    bg="lightgray"
+                )
 
     def _update_key_display(self):
-        """更新按键显示"""
+        """更新按键显示（窗口内）"""
         if hasattr(self, 'lbl_keys'):
             if self.keys:
                 display_text = "  ".join(self.keys)
@@ -168,7 +263,7 @@ class BaseApp:
                 self.lbl_keys.config(text="等待按键...")
 
     def _cleanup_keys_loop(self):
-        """后台循环，清理过期按键"""
+        """后台循环，清理过期按键（窗口内）"""
         while self.running:
             now = time.time()
             removed = False
@@ -308,6 +403,11 @@ class BaseApp:
             try:
                 self.key_listener.stop()
             except:
+                pass
+        if hasattr(self, 'keycast_overlay') and self.keycast_overlay:
+            try:
+                self.keycast_overlay.close()
+            except Exception:
                 pass
 
 
