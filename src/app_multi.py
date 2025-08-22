@@ -11,7 +11,7 @@ from utils.parse import parse_score, preprocess
 
 class MultiApp(BaseApp):
     def __init__(self, root: tk.Tk):
-        super().__init__(root, "多人模式 - 自动弹琴 (去和弦+分散)")
+        super().__init__(root, "多人模式 - 自动弹琴 (去和弦+分散)", create_key_display=False)
         self.raw_events: List[Event] = []
         self.play_events: List[SimpleEvent] = []
 
@@ -25,6 +25,9 @@ class MultiApp(BaseApp):
             '3) 偏移不修改原谱文件，仅运行时生效。\n'
             '4) 适度调整偏移可减少漏音（建议 -20~20 范围内微调）。'
         )).pack(fill="x")
+        
+        # 在说明框架之后添加独立的按键显示框架
+        self._create_key_display_frame()
 
         # 添加多人模式特有的参数 - 使用正确的行数
         params = self.frm.winfo_children()[1]  # 获取第二个子元素（params）

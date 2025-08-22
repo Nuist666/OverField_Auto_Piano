@@ -2,13 +2,16 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import List, Optional
+import threading
+import time
+from collections import deque
 
 from src.player import Player
 from src.event import Event
 
 
 class BaseApp:
-    def __init__(self, root: tk.Tk, title: str):
+    def __init__(self, root: tk.Tk, title: str, create_key_display: bool = True):
         self.root = root
         self.root.title(title)
         self.score_text: Optional[str] = None
@@ -21,6 +24,18 @@ class BaseApp:
         self._create_params_frame()
         self._create_control_frame()
         self._create_tips_frame()
+        
+        # 根据参数决定是否创建按键显示框架
+        if create_key_display:
+            self._create_key_display_frame()
+        
+        # 初始化按键显示相关变量
+        self.keys = deque(maxlen=14)  # 显示最近maxlen个按键
+        self.last_press_time = {}
+        self.running = True
+        
+        # 启动按键监听
+        self._start_key_listener()
 
     def _create_file_bar(self):
         file_bar = tk.Frame(self.frm)
@@ -88,6 +103,85 @@ class BaseApp:
             "3) 载入后切换到游戏窗口，回到本工具点击开始；\n"
             "4) 如无响应尝试以管理员身份运行。"
         )).pack(fill="x")
+
+    def _create_key_display_frame(self):
+        """创建按键显示框架"""
+        key_frame = tk.LabelFrame(self.frm, text="按键显示")
+        key_frame.pack(fill="x", pady=8)
+        
+        # 创建按键显示标签
+        self.lbl_keys = tk.Label(
+            key_frame,
+            text="等待按键...",
+            font=("Consolas", 16, "bold"),
+            fg="white",
+            bg="#C0C0C0",  # 使用深灰色模拟半透明效果
+            height=2,
+            anchor="center",
+            relief="flat",  # 去掉边框，让背景更平滑
+            borderwidth=0
+        )
+        self.lbl_keys.pack(fill="x", padx=4, pady=4)
+        
+        # 添加说明文字
+        tk.Label(key_frame, text="实时显示当前按下的按键", font=("微软雅黑", 9), fg="gray").pack(anchor="w", padx=4)
+
+    def _start_key_listener(self):
+        """启动按键监听线程"""
+        try:
+            from pynput import keyboard
+            
+            def on_press(key):
+                """键盘按下事件"""
+                try:
+                    k = key.char.upper()
+                except AttributeError:
+                    k = str(key).replace("Key.", "").upper()
+                
+                self.keys.append(k)
+                self.last_press_time[k] = time.time()
+                self._update_key_display()
+            
+            # 启动键盘监听器
+            self.key_listener = keyboard.Listener(on_press=on_press)
+            self.key_listener.start()
+            
+            # 启动清理过期按键的线程
+            threading.Thread(target=self._cleanup_keys_loop, daemon=True).start()
+            
+        except ImportError:
+            # 如果没有安装pynput，显示提示信息
+            self.lbl_keys.config(
+                text="需要安装 pynput 模块\npip install pynput",
+                font=("微软雅黑", 10),
+                fg="red",
+                bg="lightgray"
+            )
+
+    def _update_key_display(self):
+        """更新按键显示"""
+        if hasattr(self, 'lbl_keys'):
+            if self.keys:
+                display_text = "  ".join(self.keys)
+                self.lbl_keys.config(text=display_text)
+            else:
+                self.lbl_keys.config(text="等待按键...")
+
+    def _cleanup_keys_loop(self):
+        """后台循环，清理过期按键"""
+        while self.running:
+            now = time.time()
+            removed = False
+            for k in list(self.keys):
+                if now - self.last_press_time.get(k, 0) > 2.0:  # 2秒后自动清除
+                    try:
+                        self.keys.remove(k)
+                        removed = True
+                    except ValueError:
+                        pass
+            if removed:
+                self._update_key_display()
+            time.sleep(0.2)
 
     def update_progress(self, current: int, total: int):
         """更新进度条和进度标签"""
@@ -205,6 +299,15 @@ class BaseApp:
             try:
                 self.stop_play()
             except Exception:
+                pass
+
+    def __del__(self):
+        """析构函数，清理资源"""
+        self.running = False
+        if hasattr(self, 'key_listener'):
+            try:
+                self.key_listener.stop()
+            except:
                 pass
 
 
