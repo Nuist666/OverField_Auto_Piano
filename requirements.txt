@@ -1,3 +1,4 @@
 pretty_midi==0.2.10
 pyautogui==0.9.54
 pynput==1.7.6
+PyQt5==5.15.10

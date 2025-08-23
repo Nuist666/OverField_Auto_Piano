@@ -1,6 +1,7 @@
 import os
-import tkinter as tk
 from typing import List
+
+from PyQt5 import QtWidgets
 
 from src.app import BaseApp
 from src.event import Event
@@ -9,78 +10,69 @@ from utils.parse import parse_score
 
 
 class SingleApp(BaseApp):
-    def __init__(self, root: tk.Tk):
-        super().__init__(root, "Windows 钢琴自动演奏")
+    def __init__(self):
+        super().__init__('Windows 钢琴自动演奏')
+
+        # 键位映射说明
+        grp = QtWidgets.QGroupBox('键位映射（请确保与游戏一致）')
+        v = QtWidgets.QVBoxLayout(grp)
+        def add_row(text: str):
+            lbl = QtWidgets.QLabel(text)
+            v.addWidget(lbl)
+        add_row('低音 L:  L1-L7 -> a s d f g h j')
+        add_row('中音 M:  M1-M7 -> q w e r t y u')
+        add_row('高音 H:  H1-H7 -> 1 2 3 4 5 6 7')
+        add_row('和弦   :  C Dm Em F G Am G7 -> z x c v b n m')
+        self.layout().addWidget(grp)
+
         self.events: List[Event] = []
-
-        # 添加单人模式特有的UI元素
-        mapping = tk.LabelFrame(self.frm, text="键位映射（请确保与游戏一致）")
-        mapping.pack(fill="x", pady=8)
-
-        def row(lbl, txt):
-            r = tk.Frame(mapping)
-            r.pack(fill="x", pady=1)
-            tk.Label(r, text=lbl, width=8, anchor="w").pack(side="left")
-            tk.Label(r, text=txt, anchor="w").pack(side="left")
-
-        row("低音 L:", "L1-L7 -> a s d f g h j")
-        row("中音 M:", "M1-M7 -> q w e r t y u")
-        row("高音 H:", "H1-H7 -> 1 2 3 4 5 6 7")
-        row("和弦 :", "C Dm Em F G Am G7 -> z x c v b n m")
 
     def _parse_score(self, score_text: str) -> List[Event]:
         return parse_score(score_text)
 
     def _after_load(self, path: str, events: List[Event]):
         self.events = events
-        self.lbl_file.config(text=os.path.basename(path))
-        self.lbl_status.config(text=f"已载入，共 {len(self.events)} 个音符/和弦事件。")
-        self.btn_start.config(state="normal")
+        self.lbl_file.setText(os.path.basename(path))
+        self.lbl_status.setText(f'已载入，共 {len(self.events)} 个音符/和弦事件。')
+        self.btn_start.setEnabled(True)
 
     def start_play(self):
-        if not self.events:
+        if not getattr(self, 'events', None):
             return
-
         try:
-            speed = float(self.ent_speed.get())
-        except:
+            speed = float(self.ent_speed.currentText())
+        except Exception:
             speed = 1.0
-
         try:
-            countin = float(self.ent_countin.get())
-        except:
+            countin = float(self.ent_countin.currentText())
+        except Exception:
             countin = 2.0
-
         try:
-            latency = int(float(self.ent_latency.get()))
-        except:
+            latency = int(self.ent_latency.value())
+        except Exception:
             latency = 0
-            
         try:
-            progress_freq = int(float(self.ent_progress_freq.get()))
-        except:
+            progress_freq = int(self.ent_progress_freq.currentText())
+        except Exception:
             progress_freq = 1
 
-        self.btn_start.config(state="normal", text="暂停")
-        self.btn_stop.config(state="normal")
-        self.lbl_status.config(text="演奏中…（切到游戏保持焦点）")
-        # 禁用参数，避免误输入
+        self.btn_start.setEnabled(True)
+        self.btn_start.setText('暂停')
+        self.btn_stop.setEnabled(True)
+        self.lbl_status.setText('演奏中…（切到游戏保持焦点）')
         self.disable_params()
-        
-        # 重置进度条
         self.reset_progress()
 
         def on_done():
-            self.btn_start.config(state="normal", text="开始演奏")
-            self.btn_stop.config(state="disabled")
-            self.lbl_status.config(text="完成/已停止")
-            self.player = None
-            # 恢复参数
-            self.enable_params()
+            # bridge from worker thread to GUI
+            self.bus.finished.emit()
 
-        self.player = Player(self.events, countin, latency, speed, on_done, self.update_progress, progress_freq)
+        def progress_cb(cur: int, total: int):
+            self.bus.progress.emit(cur, total)
+
+        self.player = Player(self.events, countin, latency, speed, on_done, progress_cb, progress_freq)
         self.player.start()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     pass

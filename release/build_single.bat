@@ -16,13 +16,13 @@ if exist build rmdir /s /q build
 if exist __pycache__ rmdir /s /q __pycache__
 if exist %EXE_NAME%.spec del /f /q %EXE_NAME%.spec
 
-:: Use PyInstaller to generate the .spec file
+:: Use PyInstaller to generate the .spec file (PyQt5)
 pyinstaller --onefile --windowed --icon=logo.ico --name "%EXE_NAME%" ../main_single.py
 
 :: Modify the .spec file to include additional files and hiddenimports
 powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'datas=\[', 'datas=[(''../src'', ''src''), (''../utils'', ''utils'')' | Set-Content %EXE_NAME%.spec"
-:: powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pyautogui'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
-powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
+:: Update hiddenimports to include PyQt5 modules and other runtime deps
+powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''PyQt5'',''PyQt5.QtCore'',''PyQt5.QtWidgets'',''PyQt5.QtGui'',''PyQt5.sip'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
 
 :: Build again using the modified .spec file
 pyinstaller "%EXE_NAME%.spec" --distpath "dist_single" --upx-dir=upx-5.0.0-win64

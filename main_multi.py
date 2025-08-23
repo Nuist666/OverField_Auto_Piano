@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Windows 钢琴自动演奏 - 多人模式 (去和弦 + 多音时间分散)
+Windows 钢琴自动演奏 - 多人模式 (去和弦 + 多音时间分散) - PyQt5
 说明：
 - 针对多人模式中存在的漏音/丢音问题，提供一种退化策略：
   1. 去掉所有和弦（C, Dm, Em, F, G, Am, G7），仅保留单音旋律，减少同时按键数量；
@@ -14,7 +14,7 @@ Windows 钢琴自动演奏 - 多人模式 (去和弦 + 多音时间分散)
   允许范围：-50 ~ 50 (ms)。超过范围自动裁剪。
 
 """
-import tkinter as tk
+from PyQt5 import QtWidgets
 
 from src.app_multi import MultiApp
 from utils.util import admin_running
@@ -22,9 +22,10 @@ from utils.util import admin_running
 
 def main():
     admin_running()
-    root = tk.Tk()
-    MultiApp(root)
-    root.mainloop()
+    app = QtWidgets.QApplication([])
+    win = MultiApp()
+    win.show()
+    app.exec_()
 
 
 if __name__ == "__main__":

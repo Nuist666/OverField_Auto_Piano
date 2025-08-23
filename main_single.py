@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Windows 钢琴自动演奏 - 可视化脚本 (Tkinter)
+Windows 钢琴自动演奏 - 可视化脚本 (PyQt5)
 功能：
 - 载入乐谱（LRC 风格时间戳），解析为事件队列
 - 支持延长音：一行两个时间戳 [start][end] TOKENS -> 按下后保持到 end 再释放
@@ -11,9 +11,10 @@ Windows 钢琴自动演奏 - 可视化脚本 (Tkinter)
 - 面板展示按键映射关系，便于校对
 注意：
 - 需在 Windows 上运行，并确保游戏窗口在“开始演奏”后处于焦点
-- 发送键盘事件默认使用 pyautogui
+- 发送键盘事件默认使用 pynput
 """
-import tkinter as tk
+
+from PyQt5 import QtWidgets
 
 from src.app_single import SingleApp
 from utils.util import admin_running
@@ -21,9 +22,10 @@ from utils.util import admin_running
 
 def main():
     admin_running()
-    root = tk.Tk()
-    SingleApp(root)
-    root.mainloop()
+    app = QtWidgets.QApplication([])
+    win = SingleApp()
+    win.show()
+    app.exec_()
 
 
 if __name__ == "__main__":
