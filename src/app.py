@@ -9,6 +9,7 @@ from collections import deque
 from src.player import Player
 from src.event import Event
 from utils.key_cast_overlay_demo import KeyCastOverlay
+from utils.lrcp_recorder import open_recorder_window
 
 
 class BaseApp:
@@ -101,6 +102,9 @@ class BaseApp:
         # 新增：按键显示设置按钮
         self.btn_keycast = tk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
         self.btn_keycast.pack(side="left", padx=4)
+        # 新增：动作录制按钮
+        self.btn_record = tk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root))
+        self.btn_record.pack(side="left", padx=4)
         
         self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)

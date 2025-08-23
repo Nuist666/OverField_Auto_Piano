@@ -37,6 +37,9 @@
 - **按键显示设置**  
   主界面“按键显示设置”按钮可打开设置窗口，实时调整窗口外叠加层显示。
 
+- **按键录制**  
+  支持按键动作录制，生成.lrcp文件。
+
 ---
 
 ## 📂 当前项目结构
@@ -66,6 +69,7 @@ OverField_Auto_Piano/
 │  ├─ parse.py                         # 乐谱解析 + 多人预处理(preprocess)
 │  ├─ midi2lrcp.py                     # MIDI -> LRCP 转换函数 & CLI
 │  ├─ util.py                          # admin_running 自动提权函数
+│  ├─ lrcp_recorder.py                 # 录制实时演奏生成 .lrcp
 │  └─ key_cast_overlay_demo.py         # 按键叠加层（窗口外置顶按键显示，支持个性化设置）
 ├─ release/
 │  ├─ README.md                        # 打包脚本使用教程
