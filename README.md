@@ -179,10 +179,20 @@ python main_multi.py
 祝使用愉快！  
 
 ## ▶️ 演示视频
-- [bilibili](https://www.bilibili.com/video/BV11YYizGEVC)
+- [钢琴](https://www.bilibili.com/video/BV11YYizGEVC)
+- [架子鼓](https://www.bilibili.com/video/BV11YYizGEVC?&p=2)
+
 <p align="center">
-<img width="705" height="539" alt="image" src="https://github.com/user-attachments/assets/4e261f9a-4596-433e-b305-eaac4d21ff78" />
+<img width="766" height="814" alt="image" src="https://github.com/user-attachments/assets/479bf15d-5839-4fca-80e0-23b559363b8a" />
 </p>
 <p align="center">
-<img width="751" height="418" alt="image" src="https://github.com/user-attachments/assets/1eb9ceb4-a710-4ddb-9e59-50930bd66f86" />
+<img width="875" height="806" alt="image" src="https://github.com/user-attachments/assets/c699a800-61b4-4d84-af99-ac3a218a4687" />
 </p>
+<p align="center">
+<img width="429" height="325" alt="image" src="https://github.com/user-attachments/assets/00f23b74-b1ba-4f1a-9c0e-bfd3ee1ad244" />
+</p>
+<p align="center">
+<img width="583" height="594" alt="image" src="https://github.com/user-attachments/assets/7e09ef49-e24a-461b-a10a-b68fc0c5da7b" />
+</p>
+
+
