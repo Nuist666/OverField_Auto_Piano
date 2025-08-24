@@ -10,31 +10,51 @@ from utils.parse import parse_score
 
 class SingleApp(BaseApp):
     def __init__(self, root: tk.Tk):
-        super().__init__(root, "Windows 钢琴自动演奏")
+        super().__init__(root, "Windows 自动演奏 (钢琴/架子鼓)")
         self.events: List[Event] = []
 
-        # 添加单人模式特有的UI元素
-        mapping = tk.LabelFrame(self.frm, text="键位映射（请确保与游戏一致）")
-        mapping.pack(fill="x", pady=8)
+        # 键位映射提示（根据乐器切换刷新）
+        self.mapping_frame = tk.LabelFrame(self.frm, text="键位映射（请确保与游戏一致）")
+        self.mapping_frame.pack(fill="x", pady=8)
+        self._mapping_rows: List[tk.Widget] = []
+        self._render_mapping()
 
+        # 监听乐器切换以更新映射说明
+        self.instrument_var.trace_add('write', lambda *_: self._render_mapping())
+
+    def _clear_mapping(self):
+        for w in self._mapping_rows:
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        self._mapping_rows.clear()
+
+    def _render_mapping(self):
+        self._clear_mapping()
         def row(lbl, txt):
-            r = tk.Frame(mapping)
+            r = tk.Frame(self.mapping_frame)
             r.pack(fill="x", pady=1)
-            tk.Label(r, text=lbl, width=8, anchor="w").pack(side="left")
+            tk.Label(r, text=lbl, width=10, anchor="w").pack(side="left")
             tk.Label(r, text=txt, anchor="w").pack(side="left")
-
-        row("低音 L:", "L1-L7 -> a s d f g h j")
-        row("中音 M:", "M1-M7 -> q w e r t y u")
-        row("高音 H:", "H1-H7 -> 1 2 3 4 5 6 7")
-        row("和弦 :", "C Dm Em F G Am G7 -> z x c v b n m")
+            self._mapping_rows.append(r)
+        if self.get_instrument() == 'piano':
+            row("低音 L:", "L1-L7 -> a s d f g h j")
+            row("中音 M:", "M1-M7 -> q w e r t y u")
+            row("高音 H:", "H1-H7 -> 1 2 3 4 5 6 7")
+            row("和弦 :", "C Dm Em F G Am G7 -> z x c v b n m")
+        else:
+            row("架子鼓:", "踩镲闭->1  高音吊镲->2  一嗵鼓->3  二嗵鼓->4  叮叮镲->5")
+            row("", "踩镲开->Q  军鼓->W  底鼓->E  落地嗵鼓->R  中音吊镲->T")
 
     def _parse_score(self, score_text: str) -> List[Event]:
-        return parse_score(score_text)
+        # 根据乐器决定解析模式
+        return parse_score(score_text, multi=False)
 
     def _after_load(self, path: str, events: List[Event]):
         self.events = events
         self.lbl_file.config(text=os.path.basename(path))
-        self.lbl_status.config(text=f"已载入，共 {len(self.events)} 个音符/和弦事件。")
+        self.lbl_status.config(text=f"已载入，共 {len(self.events)} 个事件。")
         self.btn_start.config(state="normal")
 
     def start_play(self):

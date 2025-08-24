@@ -11,7 +11,7 @@ from utils.parse import parse_score, preprocess
 
 class MultiApp(BaseApp):
     def __init__(self, root: tk.Tk):
-        super().__init__(root, "多人模式 - 自动弹琴 (去和弦+分散)", create_key_display=False)
+        super().__init__(root, "多人模式 - 自动演奏 (钢琴/架子鼓, 去和弦+分散)", create_key_display=False)
         self.raw_events: List[Event] = []
         self.play_events: List[SimpleEvent] = []
 
@@ -20,17 +20,18 @@ class MultiApp(BaseApp):
         tips.config(text="说明")
         tk.Label(tips, justify="left", anchor="w", text=(
             '多人模式策略:\n'
-            '1) 去掉所有和弦，只保留单音。\n'
+            '1) 钢琴：去掉所有和弦，只保留单音。\n'
             '2) 对同一事件中的多个单音按顺序施加时间偏移以分散密度。\n'
             '3) 偏移不修改原谱文件，仅运行时生效。\n'
-            '4) 适度调整偏移可减少漏音（建议 -20~20 范围内微调）。'
+            '4) 适度调整偏移可减少漏音（建议 -20~20 范围内微调）。\n'
+            '5) 架子鼓：不含和弦，直接根据偏移对同刻多击做分散。'
         )).pack(fill="x")
         
         # 在说明框架之后添加独立的按键显示框架（窗口内）
         self._create_key_display_frame()
 
         # 添加多人模式特有的参数 - 使用正确的行数
-        params = self.frm.winfo_children()[1]  # 获取第二个子元素（params）
+        params = self.frm.winfo_children()[2]  # 注意：加了乐器框后，params位序为第3个
         tk.Label(params, text="多音偏移(ms):").grid(row=2, column=0, sticky="e")
         self.ent_offsets = tk.Entry(params, width=11)
         self.ent_offsets.insert(0, "-15,0,15")
@@ -41,6 +42,7 @@ class MultiApp(BaseApp):
             self.param_widgets.append(self.ent_offsets)
 
     def _parse_score(self, score_text: str) -> List[Event]:
+        # 根据多人模式需要保留 raw_tokens
         return parse_score(score_text, multi=True)
 
     def _after_load(self, path: str, events: List[Event]):
