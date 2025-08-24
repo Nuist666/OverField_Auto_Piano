@@ -13,10 +13,13 @@ def _ts_match_to_seconds(m: re.Match) -> float:
 
 def parse_line(line: str, multi: bool = False) -> List[Event]:
     """解析一行：
-    1) 延长音： [start][end] TOKENS  -> 在 start 按下，在 end 释放
-    2) 多个独立时间： [t1][t2] TOKENS 但若 t1==t2 或未按升序，可视为两个独立 tap
-    3) 单时间戳： [t] TOKENS -> tap
-    4) 兼容旧写法：多个时间戳后跟 token -> 分别 tap
+    钢琴：
+      1) 延长音： [start][end] TOKENS  -> 在 start 按下，在 end 释放
+      2) 多个独立时间： [t1][t2] TOKENS 但若 t1==t2 或未按升序，可视为两个独立 tap
+      3) 单时间戳： [t] TOKENS -> tap
+      4) 兼容旧写法：多个时间戳后跟 token -> 分别 tap
+    架子鼓：
+      - token 为 DRUM_TOKENS（不支持和弦），其余规则与钢琴一致。
     """
     ts = list(TS_RE.finditer(line))
     if not ts:
@@ -25,25 +28,43 @@ def parse_line(line: str, multi: bool = False) -> List[Event]:
     tokens_str = line[tail_start:].strip()
     if not tokens_str:
         return []
-    tokens = tokens_str.split()
-    valid_tokens = [tok for tok in tokens if TOKEN_NOTE_RE.fullmatch(tok)]
-    if not valid_tokens:
-        return []
 
-    # token -> key
+    # 根据内容判断是钢琴还是架子鼓 token 行
+    raw_tokens = tokens_str.split()
+
+    # 优先匹配钢琴 token
+    piano_tokens = [tok for tok in raw_tokens if TOKEN_NOTE_RE.fullmatch(tok)]
+
+    # 同时尝试匹配鼓 token（按空格分词直接匹配 DRUM_TOKENS 集合）
+    drum_tokens = [tok for tok in raw_tokens if tok in DRUM_TOKENS]
+
+    valid_tokens: List[str] = []
     keys: List[str] = []
-    for tok in valid_tokens:
-        if tok[0] in ("L", "M", "H"):
-            octave = tok[0]
-            num = tok[1]
-            if octave == "L":
-                keys.append(LOW_MAP[num])
-            elif octave == "M":
-                keys.append(MID_MAP[num])
+
+    if piano_tokens and not drum_tokens:
+        # 钢琴行
+        valid_tokens = piano_tokens
+        for tok in valid_tokens:
+            if tok[0] in ("L", "M", "H"):
+                octave = tok[0]
+                num = tok[1]
+                if octave == "L":
+                    keys.append(LOW_MAP[num])
+                elif octave == "M":
+                    keys.append(MID_MAP[num])
+                else:
+                    keys.append(HIGH_MAP[num])
             else:
-                keys.append(HIGH_MAP[num])
-        else:
-            keys.append(CHORD_MAP[tok])
+                keys.append(CHORD_MAP[tok])
+    elif drum_tokens and not piano_tokens:
+        # 架子鼓行
+        valid_tokens = drum_tokens
+        for tok in valid_tokens:
+            # 鼓不支持和弦，按键直接来自 DRUM_MAP
+            keys.append(DRUM_MAP[tok])
+    else:
+        # 模糊或混合（不合法），忽略本行
+        return []
 
     events: List[Event] = []
     # 延长音情形：恰好两个时间戳且第二个时间 > 第一个
@@ -78,6 +99,7 @@ def parse_score(text: str, multi: bool = False) -> List[Event]:
 
 
 # 预处理：去和弦 + 多音展开并应用偏移
+# 对于架子鼓（没有和弦），raw_tokens 里不会出现 CHORD_TOKENS，逻辑同样适用。
 def preprocess(events: List[Event], offsets_ms: List[int]) -> List[SimpleEvent]:
     result: List[SimpleEvent] = []
     if not offsets_ms:
@@ -85,12 +107,16 @@ def preprocess(events: List[Event], offsets_ms: List[int]) -> List[SimpleEvent]:
     # clamp offsets
     offsets_ms = [max(-50, min(50, o)) for o in offsets_ms]
     for ev in events:
-        # 过滤掉和弦 token
-        filtered_pairs = [(tok, key) for tok, key in zip(ev.raw_tokens, ev.keys) if tok not in CHORD_TOKENS]
+        # 过滤掉和弦 token（对鼓无影响）
+        if ev.raw_tokens is not None:
+            filtered_pairs = [(tok, key) for tok, key in zip(ev.raw_tokens, ev.keys) if tok not in CHORD_TOKENS]
+        else:
+            # 单人钢琴解析时 raw_tokens 默认为 None，此处按 keys 视为单音
+            filtered_pairs = [("", key) for key in ev.keys]
         if not filtered_pairs:
             continue  # 全是和弦被去掉
         # 现在我们有若干单音（可能>1），给每个分配偏移
-        for idx, (tok, key) in enumerate(filtered_pairs):
+        for idx, (_tok, key) in enumerate(filtered_pairs):
             off_ms = offsets_ms[idx % len(offsets_ms)]
             off = off_ms / 1000.0
             s = ev.start + off

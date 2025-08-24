@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-LRCP 实时录制器
-- 全局监听键盘按下/释放，依据 README 的键位映射生成 .lrcp 文本
-- 小窗口包含：开始、暂停、停止、导出、计时、事件数、热键设置
+LRCP/LRCD 实时录制器
+- 全局监听键盘按下/释放，依据 README 的键位映射生成 .lrcp 或 .lrcd 文本
+- 小窗口包含：开始、暂停、停止、导出、计时、事件数、热键设置、乐器选择
 - 录制上限 1 小时；忽略按键：tab、capslock、shift、ctrl、win、alt、f1~f12
 - 默认热键：开始 F6、暂停 F7、停止 F8，可在窗口中更改（仅支持 F1~F12 单键作为热键）
 
-可在主程序中通过 open_recorder_window(root) 打开。
+可在主程序中通过 open_recorder_window(root, instrument) 打开。
 也可独立运行：python utils/lrcp_recorder.py
 """
 import threading
@@ -21,14 +21,16 @@ try:
 except Exception:  # 运行时尚未安装
     keyboard = None  # type: ignore
 
-from utils.constant import LOW_MAP, MID_MAP, HIGH_MAP, CHORD_MAP
+from utils.constant import LOW_MAP, MID_MAP, HIGH_MAP, CHORD_MAP, DRUM_MAP
 
-# 反向映射：键 -> token
-KEY_TO_TOKEN: Dict[str, str] = {}
-KEY_TO_TOKEN.update({v: f"L{k}" for k, v in LOW_MAP.items()})
-KEY_TO_TOKEN.update({v: f"M{k}" for k, v in MID_MAP.items()})
-KEY_TO_TOKEN.update({v: f"H{k}" for k, v in HIGH_MAP.items()})
-KEY_TO_TOKEN.update({v: k for k, v in CHORD_MAP.items()})
+# 反向映射（按乐器区分）
+PIANO_KEY_TO_TOKEN: Dict[str, str] = {}
+PIANO_KEY_TO_TOKEN.update({v: f"L{k}" for k, v in LOW_MAP.items()})
+PIANO_KEY_TO_TOKEN.update({v: f"M{k}" for k, v in MID_MAP.items()})
+PIANO_KEY_TO_TOKEN.update({v: f"H{k}" for k, v in HIGH_MAP.items()})
+PIANO_KEY_TO_TOKEN.update({v: k for k, v in CHORD_MAP.items()})
+
+DRUM_KEY_TO_TOKEN: Dict[str, str] = {v: k for k, v in DRUM_MAP.items()}
 
 # 忽略按键列表（统一小写/Key.* 名称）
 IGNORE_KEY_NAMES = set([
@@ -59,13 +61,19 @@ def seconds_to_ts(sec: float) -> str:
 class RecorderWindow:
     """录制器窗口 + 全局键盘监听"""
 
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, instrument: str = 'piano'):
         if keyboard is None:
             messagebox.showerror("缺少依赖", "需要安装 pynput 模块\n请先执行: pip install pynput")
             return
+        ins = (instrument or 'piano').lower()
+        if ins not in ('piano', 'drum'):
+            ins = 'piano'
+        self.instrument = ins
+        self._last_instrument = ins
+
         self.root = root
         self.win = tk.Toplevel(root)
-        self.win.title("动作录制 (.lrcp)")
+        self.win.title(self._title_prefix())
         self.win.resizable(False, False)
         try:
             self.win.attributes("-topmost", True)
@@ -94,6 +102,9 @@ class RecorderWindow:
         self.hk_pause_var = tk.StringVar(value="F7")
         self.hk_stop_var = tk.StringVar(value="F8")
 
+        # 乐器选择
+        self.var_instrument = tk.StringVar(value=self.instrument)
+
         self._build_ui()
 
         # 监听器
@@ -103,12 +114,34 @@ class RecorderWindow:
         # UI 定时器
         self._tick()
 
+    def _title_prefix(self) -> str:
+        return "动作录制 (.lrcd)" if self.instrument == 'drum' else "动作录制 (.lrcp)"
+
+    def _get_mapping_text(self) -> str:
+        if self.instrument == 'drum':
+            return (
+                "- 键位映射（架子鼓）：\n"
+                "  踩镲闭->1  高音吊镲->2  一嗵鼓->3  二嗵鼓->4  叮叮镲->5\n"
+                "  踩镲开->Q  军鼓->W  底鼓->E  落地嗵鼓->R  中音吊镲->T\n"
+            )
+        else:
+            return (
+                "- 键位映射（钢琴）：\n"
+                "  低音 L1~L7 -> a s d f g h j\n  中音 M1~M7 -> q w e r t y u\n  高音 H1~H7 -> 1 2 3 4 5 6 7\n  和弦 C/Dm/Em/F/G/Am/G7 -> z x c v b n m\n"
+            )
+
     # UI
     def _build_ui(self):
         frm = tk.Frame(self.win, padx=10, pady=10)
         frm.pack(fill="both", expand=True)
 
-        # 顶部：计时与计数
+        # 顶部：乐器选择
+        insf = tk.LabelFrame(frm, text="乐器")
+        insf.pack(fill="x")
+        tk.Radiobutton(insf, text="钢琴 (.lrcp)", value='piano', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=4)
+        tk.Radiobutton(insf, text="架子鼓 (.lrcd)", value='drum', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=6)
+
+        # 中部：计时与计数
         row_top = tk.Frame(frm)
         row_top.pack(fill="x")
         tk.Label(row_top, text="已录制时间：").pack(side="left")
@@ -116,7 +149,7 @@ class RecorderWindow:
         tk.Label(row_top, text="  事件数：").pack(side="left")
         tk.Label(row_top, textvariable=self.count_var, width=8).pack(side="left")
 
-        # 中部：控制按钮
+        # 控制按钮
         row_btn = tk.Frame(frm)
         row_btn.pack(fill="x", pady=6)
         self.btn_start = tk.Button(row_btn, text="开始录制 (F6)", width=16, command=self.start_record)
@@ -129,7 +162,7 @@ class RecorderWindow:
         # 导出
         row_exp = tk.Frame(frm)
         row_exp.pack(fill="x", pady=4)
-        self.btn_export = tk.Button(row_exp, text="导出 .lrcp", state="disabled", command=self.export_lrcp)
+        self.btn_export = tk.Button(row_exp, text=("导出 .lrcd" if self.instrument == 'drum' else "导出 .lrcp"), state="disabled", command=self.export_score)
         self.btn_export.pack(side="left", padx=4)
 
         # 热键设置
@@ -146,14 +179,39 @@ class RecorderWindow:
         # 提示
         tips = tk.LabelFrame(frm, text="使用提示")
         tips.pack(fill="x", pady=6)
-        tk.Label(tips, justify="left", anchor="w", text=(
+        self.lbl_tips = tk.Label(tips, justify="left", anchor="w")
+        self.lbl_tips.pack(fill="x")
+        self._refresh_tips()
+
+    def _refresh_tips(self):
+        text = (
             "- 打开游戏并聚焦游戏窗口后点击开始或按热键开始录制。\n"
             "- 录制上限 1 小时，超时会自动停止。\n"
             "- 忽略按键：Tab, CapsLock, Shift, Ctrl, Win, Alt, F1~F12。\n"
             "- 游戏内F1~F5及F11~F12被占用，请勿设置为热键\n"
-            "- 键位映射：\n"
-            "  低音 L1~L7 -> a s d f g h j\n  中音 M1~M7 -> q w e r t y u\n  高音 H1~H7 -> 1 2 3 4 5 6 7\n  和弦 C/Dm/Em/F/G/Am/G7 -> z x c v b n m\n"
-        )).pack(fill="x")
+        ) + self._get_mapping_text()
+        self.lbl_tips.config(text=text)
+
+    def _on_instrument_change(self):
+        new_ins = self.var_instrument.get().lower()
+        if new_ins not in ('piano', 'drum'):
+            self.var_instrument.set(self.instrument)
+            return
+        # 录制中不允许切换，避免映射混乱
+        if self.is_recording or self.is_paused:
+            messagebox.showinfo("提示", "请先停止录制后再切换乐器。")
+            # 还原选择
+            self.var_instrument.set(self.instrument)
+            return
+        self.instrument = new_ins
+        self._last_instrument = new_ins
+        # 更新窗口标题、导出按钮与提示
+        try:
+            self.win.title(self._title_prefix())
+            self.btn_export.config(text=("导出 .lrcd" if self.instrument == 'drum' else "导出 .lrcp"))
+            self._refresh_tips()
+        except Exception:
+            pass
 
     # 监听
     def _start_global_listener(self):
@@ -251,9 +309,10 @@ class RecorderWindow:
         # 仅对单字符或已知映射键有效
         if not name:
             return None
-        if name in KEY_TO_TOKEN:
-            return KEY_TO_TOKEN[name]
-        return None
+        if self.instrument == 'drum':
+            return DRUM_KEY_TO_TOKEN.get(name)
+        else:
+            return PIANO_KEY_TO_TOKEN.get(name)
 
     def _now_record_time(self) -> float:
         # 录制起点到现在的相对秒，减去暂停时间
@@ -293,7 +352,7 @@ class RecorderWindow:
         self.btn_stop.config(state="normal")
         self.btn_export.config(state="disabled")
         # 标题更新
-        self.win.title("动作录制 (.lrcp) - 录制中…")
+        self.win.title(self._title_prefix() + " - 录制中…")
 
     def pause_record(self):
         if not self.is_recording:
@@ -303,7 +362,7 @@ class RecorderWindow:
             self.pause_started_at = time.perf_counter()
             self.btn_start.config(state="normal")
             self.btn_pause.config(state="disabled")
-            self.win.title("动作录制 (.lrcp) - 已暂停")
+            self.win.title(self._title_prefix() + " - 已暂停")
 
     def stop_record(self):
         if not self.is_recording:
@@ -323,14 +382,14 @@ class RecorderWindow:
         self.btn_pause.config(state="disabled")
         self.btn_stop.config(state="disabled")
         self.btn_export.config(state="normal")
-        self.win.title("动作录制 (.lrcp) - 已停止，可导出")
+        self.win.title(self._title_prefix() + " - 已停止，可导出")
 
-        # 自动生成 .lrcp 文本（保存在内存）
-        self.generated_text = self._build_lrcp_text()
+        # 自动生成文本（保存在内存）
+        self.generated_text = self._build_text()
         # 更新事件计数
         self.count_var.set(len(self.events))
 
-    def _build_lrcp_text(self) -> str:
+    def _build_text(self) -> str:
         # 将 (start, end, token) 排序并合并相同时间段的 token
         evs = list(self.events)
         evs.sort(key=lambda x: (round(x[0], 6), round(x[1], 6), x[2]))
@@ -355,15 +414,25 @@ class RecorderWindow:
             lines.append(f"{ts1}{ts2} {tokens}")
         return "\n".join(lines) + ("\n" if lines else "")
 
-    def export_lrcp(self):
+    def export_score(self):
         if not getattr(self, 'generated_text', None):
             messagebox.showinfo("提示", "当前没有可导出的录制数据，请先停止录制。")
             return
+        if self.instrument == 'drum':
+            title = "导出为 .lrcd"
+            defext = ".lrcd"
+            filetypes = [["LRCD 文件", "*.lrcd"], ["文本文件", "*.txt"], ["所有文件", "*.*"]]
+            initfile = "recorded.lrcd"
+        else:
+            title = "导出为 .lrcp"
+            defext = ".lrcp"
+            filetypes = [["LRCP 文件", "*.lrcp"], ["文本文件", "*.txt"], ["所有文件", "*.*"]]
+            initfile = "recorded.lrcp"
         path = filedialog.asksaveasfilename(
-            title="导出为 .lrcp",
-            defaultextension=".lrcp",
-            filetypes=[["LRCP 文件", "*.lrcp"], ["文本文件", "*.txt"], ["所有文件", "*.*"]],
-            initialfile="recorded.lrcp",
+            title=title,
+            defaultextension=defext,
+            filetypes=filetypes,
+            initialfile=initfile,
         )
         if not path:
             return
@@ -417,8 +486,8 @@ class RecorderWindow:
 _singleton_ref: Optional[RecorderWindow] = None
 
 
-def open_recorder_window(root: tk.Tk):
-    """对外 API：打开录制器窗口（单例）"""
+def open_recorder_window(root: tk.Tk, instrument: str = 'piano'):
+    """对外 API：打开录制器窗口（单例），instrument in {'piano','drum'}"""
     global _singleton_ref
     try:
         if _singleton_ref is not None:
@@ -430,14 +499,14 @@ def open_recorder_window(root: tk.Tk):
                 return
             except Exception:
                 _singleton_ref = None
-        _singleton_ref = RecorderWindow(root)
+        _singleton_ref = RecorderWindow(root, instrument)
     except Exception as e:
         messagebox.showerror("录制器异常", str(e))
 
 
 if __name__ == "__main__":
     r = tk.Tk()
-    r.title("LRCP 录制器 - 独立运行")
+    r.title("LRCP/LRCD 录制器 - 独立运行")
     ttk.Label(r, text="此窗口仅用于托管录制器，请在弹出的录制器小窗中操作。", padding=10).pack()
-    open_recorder_window(r)
+    open_recorder_window(r, 'piano')
     r.mainloop()

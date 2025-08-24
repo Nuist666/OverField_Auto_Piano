@@ -22,6 +22,8 @@ class BaseApp:
         self.frm = tk.Frame(root, padx=10, pady=10)
         self.frm.pack(fill="both", expand=True)
 
+        # 乐器选择（钢琴/架子鼓）
+        self._create_instrument_frame()
         self._create_file_bar()
         self._create_params_frame()
         self._create_control_frame()
@@ -52,6 +54,17 @@ class BaseApp:
         
         # 启动按键监听（窗口内展示）
         self._start_key_listener()
+
+    def _create_instrument_frame(self):
+        frm = tk.LabelFrame(self.frm, text="乐器")
+        frm.pack(fill="x")
+        self.instrument_var = tk.StringVar(value="piano")
+        tk.Radiobutton(frm, text="钢琴 (.lrcp / .mid)", variable=self.instrument_var, value="piano").pack(side="left", padx=4)
+        tk.Radiobutton(frm, text="架子鼓 (.lrcd / .mid)", variable=self.instrument_var, value="drum").pack(side="left", padx=8)
+
+    def get_instrument(self) -> str:
+        v = self.instrument_var.get().strip().lower()
+        return "drum" if v == "drum" else "piano"
 
     def _create_file_bar(self):
         file_bar = tk.Frame(self.frm)
@@ -102,8 +115,8 @@ class BaseApp:
         # 新增：按键显示设置按钮
         self.btn_keycast = tk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
         self.btn_keycast.pack(side="left", padx=4)
-        # 新增：动作录制按钮
-        self.btn_record = tk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root))
+        # 新增：动作录制按钮（按当前乐器类型）
+        self.btn_record = tk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root, self.get_instrument()))
         self.btn_record.pack(side="left", padx=4)
         
         self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
@@ -316,33 +329,40 @@ class BaseApp:
         self.set_params_enabled(True)
 
     def load_score(self):
-        """加载乐谱文件，支持 .lrcp 或 .mid；若为 .mid 则先自动转换为 .lrcp 再读取"""
-        path = filedialog.askopenfilename(
-            title="选择乐谱或MIDI文件(.lrcp/.mid)",
-            filetypes=[("所有文件", "*.*")]
-        )
+        """加载乐谱文件，根据乐器类型支持：
+        - 钢琴：.lrcp 或 .mid
+        - 架子鼓：.lrcd 或 .mid
+        若为 .mid 则自动转换为对应文本格式后解析。
+        """
+        ins = self.get_instrument()
+        if ins == 'piano':
+            filetypes = [("钢琴谱/或MIDI", "*.lrcp *.mid *.midi"), ("所有文件", "*.*")]
+        else:
+            filetypes = [("架子鼓谱/或MIDI", "*.lrcd *.mid *.midi"), ("所有文件", "*.*")]
+        path = filedialog.askopenfilename(title="选择乐谱或MIDI文件", filetypes=filetypes)
         if not path:
             return
 
         ext = os.path.splitext(path)[1].lower()
+        # MIDI -> 文本
         if ext in (".mid", ".midi"):
             try:
-                from utils.midi2lrcp import midi_to_lrcp_text
-            except Exception as e:
-                messagebox.showerror("载入失败", f"无法导入 MIDI 转换模块，请确认已安装 pretty_midi 等依赖。\n错误：{e}")
-                return
-            try:
-                self.score_text = midi_to_lrcp_text(path)
+                if ins == 'piano':
+                    from utils.midi2lrcp import midi_to_lrcp_text
+                    self.score_text = midi_to_lrcp_text(path)
+                else:
+                    from utils.midi2lrcd import midi_to_lrcd_text
+                    self.score_text = midi_to_lrcd_text(path)
                 events = self._parse_score(self.score_text)
                 if not events:
                     raise ValueError("未解析出任何事件，请检查格式。")
                 self._after_load(path, events)
                 return
             except Exception as e:
-                messagebox.showerror("转换失败", f"MIDI 转换为 LRCP 失败：\n{e}")
+                messagebox.showerror("转换失败", f"MIDI 转换失败：\n{e}")
                 return
 
-        # 其它情况按文本/谱文件读取
+        # 文本谱读取
         try:
             with open(path, "r", encoding="utf-8") as f:
                 self.score_text = f.read()
