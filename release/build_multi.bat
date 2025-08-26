@@ -20,13 +20,15 @@ if exist %EXE_NAME%.spec del /f /q %EXE_NAME%.spec
 pyinstaller --onefile --windowed --icon=logo.ico --name "%EXE_NAME%" ../main_multi.py
 
 :: Modify the .spec file to include additional files and hiddenimports
-powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'datas=\[', 'datas=[(''../src'', ''src''), (''../utils'', ''utils'')' | Set-Content %EXE_NAME%.spec"
-:: powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pyautogui'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
-powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
+powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'datas=\[', 'datas=[(''../src'', ''src''), (''../utils'', ''utils''), (''../libs'', ''libs'')' | Set-Content %EXE_NAME%.spec"
+:: 不带mp3转录为mid功能则使用下一行
+:: powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging''' | Set-Content %EXE_NAME%.spec"
+:: 带mp3转录为mid功能则使用下一行
+powershell -Command "(Get-Content %EXE_NAME%.spec) -replace 'hiddenimports=\[', 'hiddenimports=[''os'',''tkinter'',''tkinter.filedialog'',''tkinter.messagebox'',''re'',''dataclasses'',''pynput.keyboard'',''pynput'',''time'',''threading'',''argparse'',''pretty_midi'',''sys'',''ctypes'',''typing'',''packaging'',''numpy'',''urllib'',''torch'',''audioread'',''librosa'',''mido'',''tqdm''' | Set-Content %EXE_NAME%.spec"
 
 :: Build again using the modified .spec file
-pyinstaller "%EXE_NAME%.spec" --distpath "dist_multi" --upx-dir=upx-5.0.0-win64
-:: pyinstaller "%EXE_NAME%.spec" --distpath "dist_multi"
+:: pyinstaller "%EXE_NAME%.spec" --distpath "dist_multi" --upx-dir=upx-5.0.0-win64
+pyinstaller "%EXE_NAME%.spec" --distpath "dist_multi"
 
 if exist dist rmdir /s /q dist
 if exist build rmdir /s /q build
