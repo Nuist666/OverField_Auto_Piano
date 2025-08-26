@@ -7,3 +7,6 @@ audioread
 librosa
 mido
 tqdm
+torchvision
+matplotlib
+torchlibrosa
