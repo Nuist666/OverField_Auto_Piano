@@ -7,6 +7,10 @@ import traceback
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from libs.piano_transcription_inference import PianoTranscription, sample_rate
 
 
