@@ -1,12 +1,14 @@
 pretty_midi==0.2.10
 pyautogui==0.9.54
 pynput==1.7.6
-torch
 numpy
 audioread
 librosa
 mido
 tqdm
-torchvision
 matplotlib
 torchlibrosa
+--index-url https://download.pytorch.org/whl/cu118
+torch==2.5.0
+torchvision==0.20.0
+torchaudio==2.5.0
