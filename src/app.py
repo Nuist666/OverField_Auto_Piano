@@ -10,7 +10,6 @@ from src.player import Player
 from src.event import Event
 from utils.key_cast_overlay_demo import KeyCastOverlay
 from utils.lrcp_recorder import open_recorder_window
-from src.app_transcription import PianoTranscriptionApp
 
 
 class BaseApp:
@@ -70,8 +69,6 @@ class BaseApp:
     def _create_file_bar(self):
         file_bar = tk.Frame(self.frm)
         file_bar.pack(fill="x")
-        # 新增：转谱按钮，打开转录界面
-        tk.Button(file_bar, text="转谱", command=self.open_transcription).pack(side="left")
         tk.Button(file_bar, text="载入乐谱", command=self.load_score).pack(side="left")
         self.lbl_file = tk.Label(file_bar, text="未载入")
         self.lbl_file.pack(side="left", padx=8)
@@ -143,16 +140,6 @@ class BaseApp:
             "4) 如无响应尝试以管理员身份运行。"
         )).pack(fill="x")
 
-    def open_transcription(self):
-        """打开音频转录到MIDI的界面"""
-        try:
-            win = tk.Toplevel(self.root)
-            # 在新窗口中构建转录应用
-            PianoTranscriptionApp(win)
-            win.transient(self.root)
-            win.grab_set()
-        except Exception as e:
-            messagebox.showerror("错误", f"无法打开转谱界面：\n{e}")
 
     def _create_key_display_frame(self):
         """创建按键显示框架（窗口内）"""

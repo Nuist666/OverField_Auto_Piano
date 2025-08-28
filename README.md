@@ -46,33 +46,38 @@
 
 ## 📂 当前项目结构
 ```
-OverField_Auto_Piano/
-├─ main_single.py                      # 单人模式入口（含自动管理员检测）
-├─ main_multi.py                       # 多人模式入口（去和弦 + 分散，含自动管理员检测）
-├─ requirements.txt                    # 依赖（pretty_midi / pyautogui / pynput）
-├─ README.md                           # 主 README（使用说明）
-├─ README_Piano_Autoplayer_Tutorial.txt# 钢琴乐谱编写教程
-├─ README_Drum_Autoplayer_Tutorial.txt # 架子鼓乐谱编写教程
-├─ example/
-│  ├─ lrcp/                            # 示例钢琴乐谱 (.lrcp)
-│  └─ mid/                             # 示例 MIDI
-├─ src/
-│  ├─ app.py                           # 基础 GUI 框架与公共组件(BaseApp)
-│  ├─ app_single.py                    # 单人模式 UI 与加载/播放逻辑
-│  ├─ app_multi.py                     # 多人模式 UI 与偏移/去和弦逻辑
-│  ├─ event.py                         # Event / SimpleEvent 数据结构
-│  ├─ key_sender.py                    # 按键发送封装
-│  ├─ key_sender_pyautogui.py
-│  └─ player.py                        # 播放线程调度
-├─ utils/
-│  ├─ constant.py                      # 键位映射 & 正则（含 drum_map）
-│  ├─ parse.py                         # 乐谱解析 + 多人预处理(preprocess)
-│  ├─ midi2lrcp.py                     # MIDI -> LRCP 转换函数 & CLI
-│  ├─ midi2lrcd.py                     # MIDI -> LRCD 转换函数 & CLI
-│  ├─ util.py                          # admin_running 自动提权函数
-│  ├─ lrcp_recorder.py                 # 录制实时演奏生成 .lrcp / .lrcd
-│  └─ key_cast_overlay_demo.py         # 按键叠加层
-└─ release/
+OverField_Auto_Piano
+├─ README.md                              # 主 README（使用说明）
+├─ README_Drum_Autoplayer_Tutorial.txt    # 架子鼓乐谱编写教程
+├─ README_Piano_Autoplayer_Tutorial.txt   # 钢琴乐谱编写教程
+├─ example
+│    ├─ lrcp                              # 示例钢琴乐谱 (.lrcp)
+│    ├─ mid                               # 示例 MIDI
+│    └─ mp3                               # 示例 MP3
+├─ libs
+│    └─ piano_transcription_inference     # MP3 转录 MID 所需第三方库
+├─ main_multi.py                          # 多人模式入口（去和弦 + 分散，含自动管理员检测）
+├─ main_single.py                         # 单人模式入口（含自动管理员检测）
+├─ release
+├─ requirements.txt                       # 依赖（pretty_midi / pynput）
+├─ src
+│    ├─ app.py                            # 基础 GUI 框架与公共组件(BaseApp)
+│    ├─ app_multi.py                      # 多人模式 UI 与偏移/去和弦逻辑
+│    ├─ app_single.py                     # 单人模式 UI 与加载/播放逻辑
+│    ├─ event.py                          # Event / SimpleEvent 数据结构
+│    ├─ key_sender.py                     # 按键发送封装
+│    └─ player.py                         # 播放线程调度
+├─ tools
+│    ├─ key_sender_pyautogui.py
+│    └─ app_transcription.py              # MP3 转录 MID界面入口
+└─ utils
+     ├─ constant.py                       # 键位映射 & 正则（含 drum_map）
+     ├─ key_cast_overlay_demo.py          # 按键叠加层
+     ├─ lrcp_recorder.py                  # 录制实时演奏生成 .lrcp / .lrcd
+     ├─ midi2lrcd.py                      # MIDI -> LRCD 转换函数 & CLI
+     ├─ midi2lrcp.py                      # MIDI -> LRCP 转换函数 & CLI
+     ├─ parse.py                          # 乐谱解析 + 多人预处理(preprocess)
+     └─ util.py                           # admin_running 自动提权函数
 ```
 > 说明：旧结构中的 `play_piano.py / play_piano_multi.py / main.py / (根) midi2lrcp.py` 已完全被以上模块化结构取代。
 
@@ -104,6 +109,7 @@ OverField_Auto_Piano/
   - 和弦：`C, Dm, Em, F, G, Am, G7`
 
 - 架子鼓 token（中文名）：
+  
   - `踩镲闭`、`高音吊镲`、`一嗵鼓`、`二嗵鼓`、`叮叮镲`、`踩镲开`、`军鼓`、`底鼓`、`落地嗵鼓`、`中音吊镲`
 
 ---
@@ -113,15 +119,18 @@ OverField_Auto_Piano/
    ```bash
    pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
    ```
+   
 2. 直接运行（脚本会自动尝试管理员提权）：
    ```bash
    python main_single.py
    ```
+   
 3. 在窗口中：
    - 选择乐器：钢琴 或 架子鼓
    - 载入 `.lrcp/.lrcd` 或 `.mid` 文件（.mid 会自动转换）
    - 设置参数（速度 / 倒计时 / 全局延迟）  
    - 点击“开始演奏”
+   
 4. 切回游戏窗口保持焦点即可听到自动演奏。
 
 5. MIDI 转换：
@@ -133,6 +142,30 @@ OverField_Auto_Piano/
      ```bash
      python utils/midi2lrcd.py --input_midi "your.mid" --output_lrcd "out.lrcd"
      ```
+   
+6. MP3转换MIDI：
+
+   1. 自动下载模型
+
+   2. 支持CPU推理与GPU推理模型
+
+   3. 直接运行以下命令
+
+      ```bash
+      python tools/app_transcription.py
+      ```
+      
+   4. 注意，不管是否使用GPU加速，都需要安装torch；若需要使用GPU加速推理，请确保使用N卡，且环境中安装了cuda版本的torch
+   
+      ```bash
+      # cpu版本的torch：
+      pip install torch --index-url https://mirrors.aliyun.com/pypi/simple
+      
+      # cuda版本的torch：
+      pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu118
+      ```
+   
+      
 
 ---
 
@@ -166,7 +199,6 @@ python main_multi.py
 ## 🎶 扩展建议
 - 支持其他乐器：吉他、贝斯、架子鼓、麦克风
 - MIDI 文件解析 → `.lrcp`/`.lrcd`
-- 可视化键盘实时高亮
 - 录制实时演奏生成 `.lrcp`/`.lrcd`
 - 智能节流 / 自适应多人限速策略
 
