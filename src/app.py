@@ -19,7 +19,19 @@ class BaseApp:
         self.score_text: Optional[str] = None
         self.player: Optional[Player] = None
 
-        self.frm = tk.Frame(root, padx=10, pady=10)
+        # 初始化 ttkbootstrap（如可用），默认主题 superhero
+        self._ttkb = None
+        self.style = None
+        try:
+            import ttkbootstrap as ttkb  # type: ignore
+            self._ttkb = ttkb
+            self.style = ttkb.Style(theme='superhero')
+        except Exception:
+            self._ttkb = None
+            self.style = None
+
+        # 主框架
+        self.frm = ttk.Frame(root, padding=(10, 10))
         self.frm.pack(fill="both", expand=True)
 
         # 乐器选择（钢琴/架子鼓）
@@ -56,46 +68,78 @@ class BaseApp:
         self._start_key_listener()
 
     def _create_instrument_frame(self):
-        frm = tk.LabelFrame(self.frm, text="乐器")
-        frm.pack(fill="x")
+        frm = ttk.LabelFrame(self.frm, text="乐器")
+        frm.pack(fill="x", pady=(0, 8))
         self.instrument_var = tk.StringVar(value="piano")
-        tk.Radiobutton(frm, text="钢琴 (.lrcp / .mid)", variable=self.instrument_var, value="piano").pack(side="left", padx=4)
-        tk.Radiobutton(frm, text="架子鼓 (.lrcd / .mid)", variable=self.instrument_var, value="drum").pack(side="left", padx=8)
+        ttk.Radiobutton(frm, text="钢琴 (.lrcp / .mid)", variable=self.instrument_var, value="piano").pack(side="left", padx=4)
+        ttk.Radiobutton(frm, text="架子鼓 (.lrcd / .mid)", variable=self.instrument_var, value="drum").pack(side="left", padx=8)
 
     def get_instrument(self) -> str:
         v = self.instrument_var.get().strip().lower()
         return "drum" if v == "drum" else "piano"
 
     def _create_file_bar(self):
-        file_bar = tk.Frame(self.frm)
+        file_bar = ttk.Frame(self.frm)
         file_bar.pack(fill="x")
-        tk.Button(file_bar, text="载入乐谱", command=self.load_score).pack(side="left")
-        self.lbl_file = tk.Label(file_bar, text="未载入")
+        ttk.Button(file_bar, text="载入乐谱", command=self.load_score).pack(side="left")
+        self.lbl_file = ttk.Label(file_bar, text="未载入")
         self.lbl_file.pack(side="left", padx=8)
 
+        # 右上角：主题切换（ttkbootstrap 可用时）
+        if self.style is not None:
+            try:
+                # 仅列出 ttkbootstrap 主题
+                theme_names = [t for t in self.style.theme_names() if t]
+                current_theme = None
+                try:
+                    current_theme = self.style.theme_use()
+                except Exception:
+                    current_theme = theme_names[0] if theme_names else ""
+
+                right_box = ttk.Frame(file_bar)
+                right_box.pack(side="right")
+                ttk.Label(right_box, text="主题：").pack(side="left")
+                self.theme_var = tk.StringVar(value=current_theme)
+                self.cbo_theme = ttk.Combobox(right_box, width=16, state="readonly", values=theme_names, textvariable=self.theme_var)
+                self.cbo_theme.pack(side="left", padx=4)
+
+                def on_theme_changed(event=None):
+                    name = self.theme_var.get()
+                    try:
+                        self.style.theme_use(name)
+                    except Exception:
+                        pass
+                self.cbo_theme.bind("<<ComboboxSelected>>", on_theme_changed)
+            except Exception:
+                pass
+
     def _create_params_frame(self):
-        params = tk.LabelFrame(self.frm, text="参数")
+        params = ttk.LabelFrame(self.frm, text="参数")
         params.pack(fill="x", pady=8)
-        tk.Label(params, text="速度比例(1.0为原速)：").grid(row=0, column=0, sticky="e")
+        ttk.Label(params, text="速度比例(1.0为原速)：").grid(row=0, column=0, sticky="e")
         self.ent_speed = ttk.Combobox(params, width=8, state="readonly", values=["0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25", "2.5"])
         self.ent_speed.set("1.0")
         self.ent_speed.grid(row=0, column=1, sticky="w", padx=6)
-        tk.Label(params, text="起始倒计时(秒)：").grid(row=0, column=2, sticky="e")
+        ttk.Label(params, text="起始倒计时(秒)：").grid(row=0, column=2, sticky="e")
         self.ent_countin = ttk.Combobox(params, width=8, state="readonly", values=["0", "1", "2", "3", "4", "5"])
         self.ent_countin.set("2")
         self.ent_countin.grid(row=0, column=3, sticky="w", padx=6)
-        tk.Label(params, text="全局延迟(毫秒)：").grid(row=0, column=4, sticky="e")
-        self.ent_latency = tk.Spinbox(params, width=8, from_=-200, to=200, increment=5)
+        ttk.Label(params, text="全局延迟(毫秒)：").grid(row=0, column=4, sticky="e")
+        # Spinbox 使用 ttkbootstrap（如可用）
+        if self._ttkb is not None and hasattr(self._ttkb, 'Spinbox'):
+            self.ent_latency = self._ttkb.Spinbox(params, width=8, from_=-200, to=200, increment=5)
+        else:
+            self.ent_latency = tk.Spinbox(params, width=8, from_=-200, to=200, increment=5)
         self.ent_latency.delete(0, "end")
         self.ent_latency.insert(0, "0")
         self.ent_latency.grid(row=0, column=5, sticky="w", padx=6)
         
         # 添加进度更新频率配置
-        tk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
+        ttk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
         self.ent_progress_freq = ttk.Combobox(params, width=8, state="readonly", values=["1", "2", "3", "5", "10"])
         self.ent_progress_freq.set("1")
         self.ent_progress_freq.grid(row=1, column=1, sticky="w", padx=6)
-        tk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
+        ttk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
 
         # 记录参数控件，便于统一禁用/启用
         self.param_widgets = [
@@ -106,34 +150,34 @@ class BaseApp:
         ]
 
     def _create_control_frame(self):
-        ctrl = tk.Frame(self.frm)
+        ctrl = ttk.Frame(self.frm)
         ctrl.pack(fill="x", pady=6)
-        self.btn_start = tk.Button(ctrl, text="开始演奏", command=self.toggle_play_pause, state="disabled")
+        self.btn_start = ttk.Button(ctrl, text="开始演奏", command=self.toggle_play_pause, state="disabled")
         self.btn_start.pack(side="left", padx=4)
-        self.btn_stop = tk.Button(ctrl, text="停止", command=self.stop_play, state="disabled")
+        self.btn_stop = ttk.Button(ctrl, text="停止", command=self.stop_play, state="disabled")
         self.btn_stop.pack(side="left", padx=4)
         # 新增：按键显示设置按钮
-        self.btn_keycast = tk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
+        self.btn_keycast = ttk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
         self.btn_keycast.pack(side="left", padx=4)
         # 新增：动作录制按钮（按当前乐器类型）
-        self.btn_record = tk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root, self.get_instrument()))
+        self.btn_record = ttk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root, self.get_instrument()))
         self.btn_record.pack(side="left", padx=4)
         
-        self.lbl_status = tk.Label(ctrl, text="状态：等待载入乐谱")
+        self.lbl_status = ttk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
         
         # 添加进度条框架
-        progress_frame = tk.Frame(self.frm)
+        progress_frame = ttk.Frame(self.frm)
         progress_frame.pack(fill="x", pady=4)
-        self.lbl_progress = tk.Label(progress_frame, text="进度：0%")
+        self.lbl_progress = ttk.Label(progress_frame, text="进度：0%")
         self.lbl_progress.pack(side="left", padx=10)
         self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate', length=300)
         self.progress_bar.pack(side="left", padx=4, fill="x", expand=True)
 
     def _create_tips_frame(self):
-        tips = tk.LabelFrame(self.frm, text="使用提示")
+        tips = ttk.LabelFrame(self.frm, text="使用提示")
         tips.pack(fill="x", pady=8)
-        tk.Label(tips, justify="left", anchor="w", text=(
+        ttk.Label(tips, justify="left", anchor="w", text=(
             "1) 乐谱支持延长音：写法 [起始时间][结束时间] TOKENS\n"
             "2) 单时间戳仍可用作短音：[时间] TOKENS\n"
             "3) 载入后切换到游戏窗口，回到本工具点击开始；\n"
@@ -143,25 +187,30 @@ class BaseApp:
 
     def _create_key_display_frame(self):
         """创建按键显示框架（窗口内）"""
-        key_frame = tk.LabelFrame(self.frm, text="按键显示")
+        key_frame = ttk.LabelFrame(self.frm, text="按键显示")
         key_frame.pack(fill="x", pady=8)
         
-        # 创建按键显示标签
-        self.lbl_keys = tk.Label(
-            key_frame,
-            text="等待按键...",
-            font=("Consolas", 16, "bold"),
-            fg="white",
-            bg="#C0C0C0",  # 使用深灰色模拟半透明效果
-            height=2,
-            anchor="center",
-            relief="flat",  # 去掉边框，让背景更平滑
-            borderwidth=0
-        )
+        # 创建按键显示标签（使用主题样式）
+        if self._ttkb is not None:
+            self.lbl_keys = self._ttkb.Label(
+                key_frame,
+                text="等待按键...",
+                font=("Consolas", 16, "bold"),
+                bootstyle="secondary inverse",
+                anchor="center",
+                padding=6,
+            )
+        else:
+            self.lbl_keys = ttk.Label(
+                key_frame,
+                text="等待按键...",
+                font=("Consolas", 16, "bold"),
+                anchor="center",
+            )
         self.lbl_keys.pack(fill="x", padx=4, pady=4)
         
         # 添加说明文字
-        tk.Label(key_frame, text="实时显示当前按下的按键 (窗口内)", font=("微软雅黑", 9), fg="gray").pack(anchor="w", padx=4)
+        ttk.Label(key_frame, text="实时显示当前按下的按键 (窗口内)", font=("微软雅黑", 9)).pack(anchor="w", padx=4)
 
     def open_keycast_settings(self):
         """打开覆盖层设置窗口"""
@@ -196,15 +245,27 @@ class BaseApp:
         row += 1
 
         ttk.Label(win, text="透明度(0.2~1.0)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
-        tk.Scale(win, from_=0.2, to=1.0, orient="horizontal", resolution=0.05, variable=var_opacity, length=200).grid(row=row, column=1, sticky="w", padx=6)
+        if self._ttkb is not None and hasattr(self._ttkb, 'Scale'):
+            opacity_scale = self._ttkb.Scale(win, from_=0.2, to=1.0, orient="horizontal", length=200, variable=var_opacity)
+        else:
+            opacity_scale = tk.Scale(win, from_=0.2, to=1.0, orient="horizontal", resolution=0.05, variable=var_opacity, length=200)
+        opacity_scale.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
         ttk.Label(win, text="显示最近几个按键：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
-        tk.Spinbox(win, from_=1, to=20, textvariable=var_max_keys, width=8).grid(row=row, column=1, sticky="w", padx=6)
+        if self._ttkb is not None and hasattr(self._ttkb, 'Spinbox'):
+            maxkeys_spin = self._ttkb.Spinbox(win, from_=1, to=20, textvariable=var_max_keys, width=8)
+        else:
+            maxkeys_spin = tk.Spinbox(win, from_=1, to=20, textvariable=var_max_keys, width=8)
+        maxkeys_spin.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
         ttk.Label(win, text="每个按键显示(秒)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
-        tk.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8).grid(row=row, column=1, sticky="w", padx=6)
+        if self._ttkb is not None and hasattr(self._ttkb, 'Spinbox'):
+            disptime_spin = self._ttkb.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8)
+        else:
+            disptime_spin = tk.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8)
+        disptime_spin.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
         ttk.Label(win, text="位置：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
@@ -212,7 +273,7 @@ class BaseApp:
         row += 1
 
         # 按钮
-        btns = tk.Frame(win)
+        btns = ttk.Frame(win)
         btns.grid(row=row, column=0, columnspan=2, pady=10)
         
         def on_ok():
@@ -265,10 +326,7 @@ class BaseApp:
             # 如果没有安装pynput，显示提示信息
             if hasattr(self, 'lbl_keys'):
                 self.lbl_keys.config(
-                    text="需要安装 pynput 模块\npip install pynput",
-                    font=("微软雅黑", 10),
-                    fg="red",
-                    bg="lightgray"
+                    text="需要安装 pynput 模块\npip install pynput"
                 )
 
     def _update_key_display(self):

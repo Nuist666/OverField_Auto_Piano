@@ -22,7 +22,11 @@ from utils.util import admin_running
 
 def main():
     admin_running()
-    root = tk.Tk()
+    try:
+        import ttkbootstrap as ttkb
+        root = ttkb.Window(themename="superhero")
+    except Exception:
+        root = tk.Tk()
     MultiApp(root)
     root.mainloop()
 

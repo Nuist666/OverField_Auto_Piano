@@ -1,6 +1,7 @@
 import os
 import re
 import tkinter as tk
+from tkinter import ttk
 from typing import List
 
 from src.app import BaseApp
@@ -18,7 +19,7 @@ class MultiApp(BaseApp):
         # 修改提示信息为多人模式特有
         tips = self.frm.winfo_children()[-1]  # 获取最后一个子元素（tips）
         tips.config(text="说明")
-        tk.Label(tips, justify="left", anchor="w", text=(
+        ttk.Label(tips, justify="left", anchor="w", text=(
             '多人模式策略:\n'
             '1) 钢琴：去掉所有和弦，只保留单音。\n'
             '2) 对同一事件中的多个单音按顺序施加时间偏移以分散密度。\n'
@@ -32,11 +33,11 @@ class MultiApp(BaseApp):
 
         # 添加多人模式特有的参数 - 使用正确的行数
         params = self.frm.winfo_children()[2]  # 注意：加了乐器框后，params位序为第3个
-        tk.Label(params, text="多音偏移(ms):").grid(row=2, column=0, sticky="e")
-        self.ent_offsets = tk.Entry(params, width=11)
+        ttk.Label(params, text="多音偏移(ms):").grid(row=2, column=0, sticky="e")
+        self.ent_offsets = ttk.Entry(params, width=11)
         self.ent_offsets.insert(0, "-15,0,15")
         self.ent_offsets.grid(row=2, column=1, columnspan=3, sticky="w", padx=4)
-        tk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=2, column=2, columnspan=2, sticky="w")
+        ttk.Label(params, text="范围-50~50，按顺序循环应用到同一时间的多个音").grid(row=2, column=2, columnspan=2, sticky="w")
         # 把偏移输入框加入可统一控制的参数控件
         if hasattr(self, 'param_widgets'):
             self.param_widgets.append(self.ent_offsets)
