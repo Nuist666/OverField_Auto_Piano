@@ -132,54 +132,54 @@ class RecorderWindow:
 
     # UI
     def _build_ui(self):
-        frm = tk.Frame(self.win, padx=10, pady=10)
+        frm = ttk.Frame(self.win, padding=(10, 10))
         frm.pack(fill="both", expand=True)
 
         # 顶部：乐器选择
-        insf = tk.LabelFrame(frm, text="乐器")
+        insf = ttk.LabelFrame(frm, text="乐器")
         insf.pack(fill="x")
-        tk.Radiobutton(insf, text="钢琴 (.lrcp)", value='piano', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=4)
-        tk.Radiobutton(insf, text="架子鼓 (.lrcd)", value='drum', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=6)
+        ttk.Radiobutton(insf, text="钢琴 (.lrcp)", value='piano', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=4)
+        ttk.Radiobutton(insf, text="架子鼓 (.lrcd)", value='drum', variable=self.var_instrument, command=self._on_instrument_change).pack(side="left", padx=6)
 
         # 中部：计时与计数
-        row_top = tk.Frame(frm)
+        row_top = ttk.Frame(frm)
         row_top.pack(fill="x")
-        tk.Label(row_top, text="已录制时间：").pack(side="left")
-        tk.Label(row_top, textvariable=self.elapsed_var, width=12).pack(side="left")
-        tk.Label(row_top, text="  事件数：").pack(side="left")
-        tk.Label(row_top, textvariable=self.count_var, width=8).pack(side="left")
+        ttk.Label(row_top, text="已录制时间：").pack(side="left")
+        ttk.Label(row_top, textvariable=self.elapsed_var, width=12).pack(side="left")
+        ttk.Label(row_top, text="  事件数：").pack(side="left")
+        ttk.Label(row_top, textvariable=self.count_var, width=8).pack(side="left")
 
         # 控制按钮
-        row_btn = tk.Frame(frm)
+        row_btn = ttk.Frame(frm)
         row_btn.pack(fill="x", pady=6)
-        self.btn_start = tk.Button(row_btn, text="开始录制 (F6)", width=16, command=self.start_record)
+        self.btn_start = ttk.Button(row_btn, text="开始录制 (F6)", width=16, command=self.start_record)
         self.btn_start.pack(side="left", padx=4)
-        self.btn_pause = tk.Button(row_btn, text="暂停录制 (F7)", width=16, state="disabled", command=self.pause_record)
+        self.btn_pause = ttk.Button(row_btn, text="暂停录制 (F7)", width=16, state="disabled", command=self.pause_record)
         self.btn_pause.pack(side="left", padx=4)
-        self.btn_stop = tk.Button(row_btn, text="停止录制 (F8)", width=16, state="disabled", command=self.stop_record)
+        self.btn_stop = ttk.Button(row_btn, text="停止录制 (F8)", width=16, state="disabled", command=self.stop_record)
         self.btn_stop.pack(side="left", padx=4)
 
         # 导出
-        row_exp = tk.Frame(frm)
+        row_exp = ttk.Frame(frm)
         row_exp.pack(fill="x", pady=4)
-        self.btn_export = tk.Button(row_exp, text=("导出 .lrcd" if self.instrument == 'drum' else "导出 .lrcp"), state="disabled", command=self.export_score)
+        self.btn_export = ttk.Button(row_exp, text=("导出 .lrcd" if self.instrument == 'drum' else "导出 .lrcp"), state="disabled", command=self.export_score)
         self.btn_export.pack(side="left", padx=4)
 
         # 热键设置
-        hot = tk.LabelFrame(frm, text="热键设置")
+        hot = ttk.LabelFrame(frm, text="热键设置")
         hot.pack(fill="x", pady=8)
         fkeys = [f"F{i}" for i in range(1, 13)]
-        tk.Label(hot, text="开始录制：").grid(row=0, column=0, sticky="e", padx=4, pady=2)
+        ttk.Label(hot, text="开始录制：").grid(row=0, column=0, sticky="e", padx=4, pady=2)
         ttk.Combobox(hot, values=fkeys, state="readonly", width=6, textvariable=self.hk_start_var).grid(row=0, column=1, sticky="w", padx=4)
-        tk.Label(hot, text="暂停录制：").grid(row=0, column=2, sticky="e", padx=4, pady=2)
+        ttk.Label(hot, text="暂停录制：").grid(row=0, column=2, sticky="e", padx=4, pady=2)
         ttk.Combobox(hot, values=fkeys, state="readonly", width=6, textvariable=self.hk_pause_var).grid(row=0, column=3, sticky="w", padx=4)
-        tk.Label(hot, text="停止录制：").grid(row=0, column=4, sticky="e", padx=4, pady=2)
+        ttk.Label(hot, text="停止录制：").grid(row=0, column=4, sticky="e", padx=4, pady=2)
         ttk.Combobox(hot, values=fkeys, state="readonly", width=6, textvariable=self.hk_stop_var).grid(row=0, column=5, sticky="w", padx=4)
 
         # 提示
-        tips = tk.LabelFrame(frm, text="使用提示")
+        tips = ttk.LabelFrame(frm, text="使用提示")
         tips.pack(fill="x", pady=6)
-        self.lbl_tips = tk.Label(tips, justify="left", anchor="w")
+        self.lbl_tips = ttk.Label(tips, justify="left", anchor="w")
         self.lbl_tips.pack(fill="x")
         self._refresh_tips()
 
@@ -505,7 +505,12 @@ def open_recorder_window(root: tk.Tk, instrument: str = 'piano'):
 
 
 if __name__ == "__main__":
-    r = tk.Tk()
+    # 独立运行时尝试使用 ttkbootstrap 外观
+    try:
+        import ttkbootstrap as ttkb
+        r = ttkb.Window(themename="cosmo")
+    except Exception:
+        r = tk.Tk()
     r.title("LRCP/LRCD 录制器 - 独立运行")
     ttk.Label(r, text="此窗口仅用于托管录制器，请在弹出的录制器小窗中操作。", padding=10).pack()
     open_recorder_window(r, 'piano')

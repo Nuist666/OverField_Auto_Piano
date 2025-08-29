@@ -5,7 +5,7 @@ import librosa
 import threading
 import traceback
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -18,39 +18,39 @@ class PianoTranscriptionApp:
     def __init__(self, root):
         self.root = root
         self.root.title("MP3转录MID")
-        self.root.geometry("500x260")
+        self.root.geometry("500x300")
 
         self.var_cuda = tk.BooleanVar()
         self._create_widgets()
 
     def _create_widgets(self):
         # 音频文件输入
-        tk.Label(self.root, text="音频文件:").pack(anchor='w', padx=5)
-        frame_audio = tk.Frame(self.root)
+        ttk.Label(self.root, text="音频文件:").pack(anchor='w', padx=5)
+        frame_audio = ttk.Frame(self.root)
         frame_audio.pack(fill='x', padx=5, pady=2)
-        self.entry_audio = tk.Entry(frame_audio)
+        self.entry_audio = ttk.Entry(frame_audio)
         self.entry_audio.pack(side=tk.LEFT, fill='x', expand=True)
-        tk.Button(frame_audio, text="选择文件", command=self.open_file).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_audio, text="选择文件", command=self.open_file).pack(side=tk.LEFT, padx=2)
 
         # 输出 MIDI 文件路径
-        tk.Label(self.root, text="输出MIDI文件:").pack(anchor='w', padx=5)
-        frame_midi = tk.Frame(self.root)
+        ttk.Label(self.root, text="输出MIDI文件:").pack(anchor='w', padx=5)
+        frame_midi = ttk.Frame(self.root)
         frame_midi.pack(fill='x', padx=5, pady=2)
-        self.entry_midi = tk.Entry(frame_midi)
+        self.entry_midi = ttk.Entry(frame_midi)
         self.entry_midi.pack(side=tk.LEFT, fill='x', expand=True)
-        tk.Button(frame_midi, text="保存路径", command=self.save_file).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_midi, text="保存路径", command=self.save_file).pack(side=tk.LEFT, padx=2)
 
         # CUDA 选项
-        tk.Checkbutton(self.root, text="尝试使用CUDA加速", variable=self.var_cuda).pack()
-        self.label_device = tk.Label(self.root, text="当前设备：未检测", fg="green")
+        ttk.Checkbutton(self.root, text="尝试使用CUDA加速", variable=self.var_cuda).pack()
+        self.label_device = ttk.Label(self.root, text="当前设备：未检测")
         self.label_device.pack(pady=2)
 
         # 状态显示（显示进度、耗时、预计剩余）
-        self.label_status = tk.Label(self.root, text="", fg="blue")
+        self.label_status = ttk.Label(self.root, text="")
         self.label_status.pack(pady=10)
 
         # 开始按钮
-        self.btn_start = tk.Button(self.root, text="开始转录", command=self.start_transcription)
+        self.btn_start = ttk.Button(self.root, text="开始转录", command=self.start_transcription)
         self.btn_start.pack(pady=10)
 
     def open_file(self):
@@ -139,6 +139,11 @@ class PianoTranscriptionApp:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    # 尝试使用 ttkbootstrap 外观
+    try:
+        import ttkbootstrap as ttkb
+        root = ttkb.Window(themename="superhero")
+    except Exception:
+        root = tk.Tk()
     app = PianoTranscriptionApp(root)
     root.mainloop()

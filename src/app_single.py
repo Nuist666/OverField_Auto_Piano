@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import ttk
 from typing import List
 
 from src.app import BaseApp
@@ -14,7 +15,7 @@ class SingleApp(BaseApp):
         self.events: List[Event] = []
 
         # 键位映射提示（根据乐器切换刷新）
-        self.mapping_frame = tk.LabelFrame(self.frm, text="键位映射（请确保与游戏一致）")
+        self.mapping_frame = ttk.LabelFrame(self.frm, text="键位映射（请确保与游戏一致）")
         self.mapping_frame.pack(fill="x", pady=8)
         self._mapping_rows: List[tk.Widget] = []
         self._render_mapping()
@@ -33,10 +34,10 @@ class SingleApp(BaseApp):
     def _render_mapping(self):
         self._clear_mapping()
         def row(lbl, txt):
-            r = tk.Frame(self.mapping_frame)
+            r = ttk.Frame(self.mapping_frame)
             r.pack(fill="x", pady=1)
-            tk.Label(r, text=lbl, width=10, anchor="w").pack(side="left")
-            tk.Label(r, text=txt, anchor="w").pack(side="left")
+            ttk.Label(r, text=lbl, width=10, anchor="w").pack(side="left")
+            ttk.Label(r, text=txt, anchor="w").pack(side="left")
             self._mapping_rows.append(r)
         if self.get_instrument() == 'piano':
             row("低音 L:", "L1-L7 -> a s d f g h j")
