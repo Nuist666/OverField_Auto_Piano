@@ -79,7 +79,11 @@ class MultiApp(BaseApp):
 
         # 每次开始前按当前偏移重新生成
         self.update_play_events()
-        # 开始后：启用停止按钮；开始按钮显示为“暂停”并保持可点击
+        
+        # 启动键盘监听
+        self._start_key_listener()
+        
+        # 开始后：启用停止按钮；开始按钮显示为"暂停"并保持可点击
         self.btn_start.config(state="normal", text="暂停")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text=f'演奏中… (总 {len(self.play_events)} 单音事件)')

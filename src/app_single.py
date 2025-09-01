@@ -82,6 +82,9 @@ class SingleApp(BaseApp):
         except:
             progress_freq = 1
 
+        # 启动键盘监听
+        self._start_key_listener()
+        
         self.btn_start.config(state="normal", text="暂停")
         self.btn_stop.config(state="normal")
         self.lbl_status.config(text="演奏中…（切到游戏保持焦点）")
