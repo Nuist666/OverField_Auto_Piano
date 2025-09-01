@@ -7,10 +7,10 @@ from typing import Optional, Dict
 
 # 默认设置
 DEFAULT_SETTINGS = {
-    "enabled": True,           # 默认开启
-    "opacity": 0.7,           # 0.0~1.0
-    "max_keys": 5,            # 显示最近几个按键
-    "display_time": 2.0,      # 每个按键显示多久（秒）
+    "enabled": True,  # 默认开启
+    "opacity": 0.7,  # 0.0~1.0
+    "max_keys": 5,  # 显示最近几个按键
+    "display_time": 2.0,  # 每个按键显示多久（秒）
     "position": "bottom_center",  # 位置：top_left/top_right/bottom_left/bottom_right/bottom_center/top_center
 }
 
@@ -64,9 +64,8 @@ class KeyCastOverlay:
         self.keys = deque(maxlen=int(self.settings.get("max_keys", 5)))
         self.last_press_time: Dict[str, float] = {}
 
-        # 根据 enabled 初始化显示/监听
+        # 根据 enabled 初始化显示
         self.set_enabled(bool(self.settings.get("enabled", False)))
-
         # 关闭回调
         self.window.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -75,10 +74,14 @@ class KeyCastOverlay:
         self.settings["enabled"] = enabled
         if enabled:
             self.window.deiconify()
+        else:
+            self.window.withdraw()
+
+    def start_key_listener(self):
+        if self.settings["enabled"]:
             self._start_listener()
             self._start_cleanup_loop()
         else:
-            self.window.withdraw()
             self._stop_listener()
             self._stop_cleanup_loop()
 
@@ -105,6 +108,12 @@ class KeyCastOverlay:
         self._apply_position()
 
         # 若开关变化外部会再调用 set_enabled，这里不处理 enabled
+
+    def clear_keys(self):
+        """清空所有按键显示"""
+        self.keys.clear()
+        self.last_press_time.clear()
+        self._schedule_display_update()
 
     def close(self):
         self.set_enabled(False)
@@ -145,6 +154,7 @@ class KeyCastOverlay:
     def _start_listener(self):
         if self.listener is not None:
             return
+
         def on_press(key):
             try:
                 k = key.char.upper()
@@ -153,6 +163,7 @@ class KeyCastOverlay:
             self.keys.append(k)
             self.last_press_time[k] = time.time()
             self._schedule_display_update()
+
         try:
             self.listener = keyboard.Listener(on_press=on_press)
             self.listener.start()
@@ -198,6 +209,7 @@ class KeyCastOverlay:
         # 保证在主线程更新 UI
         def _do():
             self.label.config(text="  ".join(self.keys))
+
         try:
             self.window.after(0, _do)
         except Exception:

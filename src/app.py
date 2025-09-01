@@ -40,15 +40,17 @@ class BaseApp:
         self._create_params_frame()
         self._create_control_frame()
         self._create_tips_frame()
-        
+
         # 根据参数决定是否创建按键显示框架
         if create_key_display:
             self._create_key_display_frame()
-        
+
         # 初始化按键显示相关变量（窗口内）
         self.keys = deque(maxlen=14)  # 显示最近maxlen个按键
         self.last_press_time = {}
         self.running = True
+        self.key_listener = None  # 键盘监听器实例
+        self.key_listener_active = False  # 键盘监听器是否激活
 
         # 覆盖层（窗口外）默认设置与实例（默认开启）
         self.keycast_settings = {
@@ -63,16 +65,15 @@ class BaseApp:
             self.keycast_overlay = KeyCastOverlay(self.root, self.keycast_settings)
         except Exception:
             self.keycast_overlay = None
-        
-        # 启动按键监听（窗口内展示）
-        self._start_key_listener()
 
     def _create_instrument_frame(self):
         frm = ttk.LabelFrame(self.frm, text="乐器")
         frm.pack(fill="x", pady=(0, 8))
         self.instrument_var = tk.StringVar(value="piano")
-        ttk.Radiobutton(frm, text="钢琴 (.lrcp / .mid)", variable=self.instrument_var, value="piano").pack(side="left", padx=4)
-        ttk.Radiobutton(frm, text="架子鼓 (.lrcd / .mid)", variable=self.instrument_var, value="drum").pack(side="left", padx=8)
+        ttk.Radiobutton(frm, text="钢琴 (.lrcp / .mid)", variable=self.instrument_var, value="piano").pack(side="left",
+                                                                                                           padx=4)
+        ttk.Radiobutton(frm, text="架子鼓 (.lrcd / .mid)", variable=self.instrument_var, value="drum").pack(side="left",
+                                                                                                            padx=8)
 
     def get_instrument(self) -> str:
         v = self.instrument_var.get().strip().lower()
@@ -100,7 +101,8 @@ class BaseApp:
                 right_box.pack(side="right")
                 ttk.Label(right_box, text="主题：").pack(side="left")
                 self.theme_var = tk.StringVar(value=current_theme)
-                self.cbo_theme = ttk.Combobox(right_box, width=16, state="readonly", values=theme_names, textvariable=self.theme_var)
+                self.cbo_theme = ttk.Combobox(right_box, width=16, state="readonly", values=theme_names,
+                                              textvariable=self.theme_var)
                 self.cbo_theme.pack(side="left", padx=4)
 
                 def on_theme_changed(event=None):
@@ -109,6 +111,7 @@ class BaseApp:
                         self.style.theme_use(name)
                     except Exception:
                         pass
+
                 self.cbo_theme.bind("<<ComboboxSelected>>", on_theme_changed)
             except Exception:
                 pass
@@ -117,7 +120,8 @@ class BaseApp:
         params = ttk.LabelFrame(self.frm, text="参数")
         params.pack(fill="x", pady=8)
         ttk.Label(params, text="速度比例(1.0为原速)：").grid(row=0, column=0, sticky="e")
-        self.ent_speed = ttk.Combobox(params, width=8, state="readonly", values=["0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25", "2.5"])
+        self.ent_speed = ttk.Combobox(params, width=8, state="readonly",
+                                      values=["0.5", "0.75", "1.0", "1.25", "1.5", "1.75", "2.0", "2.25", "2.5"])
         self.ent_speed.set("1.0")
         self.ent_speed.grid(row=0, column=1, sticky="w", padx=6)
         ttk.Label(params, text="起始倒计时(秒)：").grid(row=0, column=2, sticky="e")
@@ -133,13 +137,14 @@ class BaseApp:
         self.ent_latency.delete(0, "end")
         self.ent_latency.insert(0, "0")
         self.ent_latency.grid(row=0, column=5, sticky="w", padx=6)
-        
+
         # 添加进度更新频率配置
         ttk.Label(params, text="进度更新频率：").grid(row=1, column=0, sticky="e")
         self.ent_progress_freq = ttk.Combobox(params, width=8, state="readonly", values=["1", "2", "3", "5", "10"])
         self.ent_progress_freq.set("1")
         self.ent_progress_freq.grid(row=1, column=1, sticky="w", padx=6)
-        ttk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4, sticky="w")
+        ttk.Label(params, text="(1=每个动作都更新, 2=每2个动作更新, 以此类推)").grid(row=1, column=2, columnspan=4,
+                                                                                     sticky="w")
 
         # 记录参数控件，便于统一禁用/启用
         self.param_widgets = [
@@ -160,12 +165,13 @@ class BaseApp:
         self.btn_keycast = ttk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
         self.btn_keycast.pack(side="left", padx=4)
         # 新增：动作录制按钮（按当前乐器类型）
-        self.btn_record = ttk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root, self.get_instrument()))
+        self.btn_record = ttk.Button(ctrl, text="动作录制",
+                                     command=lambda: open_recorder_window(self.root, self.get_instrument()))
         self.btn_record.pack(side="left", padx=4)
-        
+
         self.lbl_status = ttk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
-        
+
         # 添加进度条框架
         progress_frame = ttk.Frame(self.frm)
         progress_frame.pack(fill="x", pady=4)
@@ -184,12 +190,11 @@ class BaseApp:
             "4) 如无响应尝试以管理员身份运行。"
         )).pack(fill="x")
 
-
     def _create_key_display_frame(self):
         """创建按键显示框架（窗口内）"""
         key_frame = ttk.LabelFrame(self.frm, text="按键显示")
         key_frame.pack(fill="x", pady=8)
-        
+
         # 创建按键显示标签（使用主题样式）
         if self._ttkb is not None:
             self.lbl_keys = self._ttkb.Label(
@@ -208,7 +213,7 @@ class BaseApp:
                 anchor="center",
             )
         self.lbl_keys.pack(fill="x", padx=4, pady=4)
-        
+
         # 添加说明文字
         ttk.Label(key_frame, text="实时显示当前按下的按键 (窗口内)", font=("微软雅黑", 9)).pack(anchor="w", padx=4)
 
@@ -246,9 +251,11 @@ class BaseApp:
 
         ttk.Label(win, text="透明度(0.2~1.0)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
         if self._ttkb is not None and hasattr(self._ttkb, 'Scale'):
-            opacity_scale = self._ttkb.Scale(win, from_=0.2, to=1.0, orient="horizontal", length=200, variable=var_opacity)
+            opacity_scale = self._ttkb.Scale(win, from_=0.2, to=1.0, orient="horizontal", length=200,
+                                             variable=var_opacity)
         else:
-            opacity_scale = tk.Scale(win, from_=0.2, to=1.0, orient="horizontal", resolution=0.05, variable=var_opacity, length=200)
+            opacity_scale = tk.Scale(win, from_=0.2, to=1.0, orient="horizontal", resolution=0.05, variable=var_opacity,
+                                     length=200)
         opacity_scale.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
@@ -262,20 +269,22 @@ class BaseApp:
 
         ttk.Label(win, text="每个按键显示(秒)：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
         if self._ttkb is not None and hasattr(self._ttkb, 'Spinbox'):
-            disptime_spin = self._ttkb.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8)
+            disptime_spin = self._ttkb.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time,
+                                               width=8)
         else:
             disptime_spin = tk.Spinbox(win, from_=0.5, to=10.0, increment=0.5, textvariable=var_disp_time, width=8)
         disptime_spin.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
         ttk.Label(win, text="位置：").grid(row=row, column=0, sticky="e", padx=6, pady=6)
-        ttk.Combobox(win, state="readonly", values=list(pos_map.keys()), textvariable=var_position, width=14).grid(row=row, column=1, sticky="w", padx=6)
+        ttk.Combobox(win, state="readonly", values=list(pos_map.keys()), textvariable=var_position, width=14).grid(
+            row=row, column=1, sticky="w", padx=6)
         row += 1
 
         # 按钮
         btns = ttk.Frame(win)
         btns.grid(row=row, column=0, columnspan=2, pady=10)
-        
+
         def on_ok():
             new_cfg = {
                 "opacity": max(0.2, min(1.0, float(var_opacity.get()))),
@@ -291,43 +300,77 @@ class BaseApp:
             # 同步到记录
             self.keycast_settings["enabled"] = bool(var_enabled.get())
             win.destroy()
-        
+
         def on_cancel():
             # 取消不更改设置
             win.destroy()
-        
+
         ttk.Button(btns, text="确认", command=on_ok).pack(side="left", padx=8)
         ttk.Button(btns, text="取消", command=on_cancel).pack(side="left", padx=8)
 
     def _start_key_listener(self):
         """启动按键监听线程（窗口内展示）"""
+        self.keycast_overlay.start_key_listener()
+        if self.key_listener_active:
+            return  # 已经启动，避免重复启动
+
         try:
             from pynput import keyboard
-            
+
             def on_press(key):
                 """键盘按下事件"""
+                if not self.key_listener_active:
+                    return
+
                 try:
                     k = key.char.upper()
                 except AttributeError:
                     k = str(key).replace("Key.", "").upper()
-                
+
                 self.keys.append(k)
                 self.last_press_time[k] = time.time()
                 self._update_key_display()
-            
+
             # 启动键盘监听器
             self.key_listener = keyboard.Listener(on_press=on_press)
             self.key_listener.start()
-            
+            self.key_listener_active = True
+
             # 启动清理过期按键的线程
             threading.Thread(target=self._cleanup_keys_loop, daemon=True).start()
-            
+
         except ImportError:
             # 如果没有安装pynput，显示提示信息
             if hasattr(self, 'lbl_keys'):
                 self.lbl_keys.config(
                     text="需要安装 pynput 模块\npip install pynput"
                 )
+
+    def _stop_key_listener(self):
+        """停止按键监听线程"""
+        if not self.key_listener_active:
+            return  # 已经停止，避免重复停止
+
+        self.key_listener_active = False
+
+        if self.key_listener:
+            try:
+                self.key_listener.stop()
+                self.key_listener = None
+            except Exception:
+                pass
+
+        # 清空按键显示
+        self.keys.clear()
+        self.last_press_time.clear()
+        self._update_key_display()
+
+        # 清空覆盖层显示
+        if self.keycast_overlay:
+            try:
+                self.keycast_overlay.clear_keys()
+            except Exception:
+                pass
 
     def _update_key_display(self):
         """更新按键显示（窗口内）"""
@@ -340,7 +383,7 @@ class BaseApp:
 
     def _cleanup_keys_loop(self):
         """后台循环，清理过期按键（窗口内）"""
-        while self.running:
+        while self.running and self.key_listener_active:
             now = time.time()
             removed = False
             for k in list(self.keys):
@@ -450,6 +493,8 @@ class BaseApp:
             self.player = None
             self.reset_progress()
             self.enable_params()
+            # 停止键盘监听
+            self._stop_key_listener()
             # 恢复按钮与状态
             self.btn_start.config(state="normal", text="开始演奏")
             self.btn_stop.config(state="disabled")
