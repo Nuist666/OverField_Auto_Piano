@@ -33,17 +33,18 @@ class SingleApp(BaseApp):
 
     def _render_mapping(self):
         self._clear_mapping()
+
         def row(lbl, txt):
             r = ttk.Frame(self.mapping_frame)
             r.pack(fill="x", pady=1)
-            ttk.Label(r, text=lbl, width=10, anchor="w").pack(side="left")
-            ttk.Label(r, text=txt, anchor="w").pack(side="left")
+            ttk.Label(r, text=lbl, width=7, anchor="w").pack(side="left")
+            ttk.Label(r, text=txt, anchor="w", font=("Courier New", 10)).pack(side="left")
             self._mapping_rows.append(r)
         if self.get_instrument() == 'piano':
-            row("低音 L:", "L1-L7 -> a s d f g h j")
-            row("中音 M:", "M1-M7 -> q w e r t y u")
-            row("高音 H:", "H1-H7 -> 1 2 3 4 5 6 7")
-            row("和弦 :", "C Dm Em F G Am G7 -> z x c v b n m")
+            row("低音 L:", "L1 L2 L3 L4 L5 L6 L7 -> A S D F G H J")
+            row("中音 M:", "M1 M2 M3 M4 M5 M6 M7 -> Q W E R T Y U")
+            row("高音 H:", "H1 H2 H3 H4 H5 H6 H7 -> 1 2 3 4 5 6 7")
+            row("和弦 :",  "C  Dm Em F  G  Am G7 -> Z X C V B N M")
         else:
             row("架子鼓:", "踩镲闭->1  高音吊镲->2  一嗵鼓->3  二嗵鼓->4  叮叮镲->5")
             row("", "踩镲开->Q  军鼓->W  底鼓->E  落地嗵鼓->R  中音吊镲->T")
