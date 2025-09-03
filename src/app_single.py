@@ -44,7 +44,6 @@ class SingleApp(BaseApp):
             row("低音 L:", "L1 L2 L3 L4 L5 L6 L7 -> A S D F G H J")
             row("中音 M:", "M1 M2 M3 M4 M5 M6 M7 -> Q W E R T Y U")
             row("高音 H:", "H1 H2 H3 H4 H5 H6 H7 -> 1 2 3 4 5 6 7")
-            row("和弦 :",  "C  Dm Em F  G  Am G7 -> Z X C V B N M")
         else:
             row("架子鼓:", "踩镲闭->1  高音吊镲->2  一嗵鼓->3  二嗵鼓->4  叮叮镲->5")
             row("", "踩镲开->Q  军鼓->W  底鼓->E  落地嗵鼓->R  中音吊镲->T")
