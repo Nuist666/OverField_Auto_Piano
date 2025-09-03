@@ -348,6 +348,7 @@ class BaseApp:
 
     def _stop_key_listener(self):
         """停止按键监听线程"""
+        self.keycast_overlay.stop_key_listener()
         if not self.key_listener_active:
             return  # 已经停止，避免重复停止
 
@@ -512,12 +513,14 @@ class BaseApp:
                 self.player.resume()
                 self.btn_start.config(text="暂停")
                 self.lbl_status.config(text="演奏中…")
+                self._start_key_listener()
             else:
                 # 进入暂停
                 if hasattr(self.player, 'pause'):
                     self.player.pause()
                     self.btn_start.config(text="继续")
                     self.lbl_status.config(text="已暂停")
+                    self._stop_key_listener()
         except Exception:
             try:
                 self.stop_play()

@@ -85,6 +85,10 @@ class KeyCastOverlay:
             self._stop_listener()
             self._stop_cleanup_loop()
 
+    def stop_key_listener(self):
+        self._stop_listener()
+        self._stop_cleanup_loop()
+
     def apply_settings(self, new_settings: Dict):
         # 仅更新已知键
         for k in DEFAULT_SETTINGS.keys():
