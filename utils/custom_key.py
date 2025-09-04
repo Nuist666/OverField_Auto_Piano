@@ -4,6 +4,8 @@ import json
 import os
 from typing import Dict, List
 
+from utils.constant import update_key_maps
+
 # 默认键位配置
 DEFAULT_KEY_MAPS = {
     "开放空间": {
@@ -114,7 +116,7 @@ class KeyMapEditor:
     def setup_ui(self):
         """设置UI界面"""
         self.master.title("钢琴键位自定义映射")
-        self.master.geometry("350x400")
+        self.master.geometry("350x470")
 
         # 主框架
         main_frame = ttk.Frame(self.master, padding="10")
@@ -267,7 +269,20 @@ class KeyMapEditor:
 
     def apply_changes(self):
         """应用更改"""
+        # 保存当前配置
         self.save_profile()
+
+        # 获取当前键位映射
+        current_map = self.manager.get_current_map()
+        
+        # 更新键位映射
+        update_key_maps(
+            low_map=current_map["low_map"],
+            mid_map=current_map["mid_map"],
+            high_map=current_map["high_map"]
+        )
+
+        # 显示成功消息
         messagebox.showinfo("成功", "配置已应用！")
 
 
