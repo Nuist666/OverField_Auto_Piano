@@ -72,7 +72,7 @@ OverField_Auto_Piano
 │    └─ app_transcription.py              # MP3 转录 MID界面入口
 └─ utils
      ├─ constant.py                       # 键位映射 & 正则（含 drum_map）
-     ├─ key_cast_overlay_demo.py          # 按键叠加层
+     ├─ key_cast_overlay.py               # 按键叠加层
      ├─ lrcp_recorder.py                  # 录制实时演奏生成 .lrcp / .lrcd
      ├─ midi2lrcd.py                      # MIDI -> LRCD 转换函数 & CLI
      ├─ midi2lrcp.py                      # MIDI -> LRCP 转换函数 & CLI

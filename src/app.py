@@ -8,8 +8,9 @@ from collections import deque
 
 from src.player import Player
 from src.event import Event
-from utils.key_cast_overlay_demo import KeyCastOverlay
+from utils.key_cast_overlay import KeyCastOverlay
 from utils.lrcp_recorder import open_recorder_window
+from utils.custom_key import CustomKeyMap, KeyMapEditor
 
 
 class BaseApp:
@@ -165,9 +166,12 @@ class BaseApp:
         self.btn_keycast = ttk.Button(ctrl, text="按键显示设置", command=self.open_keycast_settings)
         self.btn_keycast.pack(side="left", padx=4)
         # 新增：动作录制按钮（按当前乐器类型）
-        self.btn_record = ttk.Button(ctrl, text="动作录制",
-                                     command=lambda: open_recorder_window(self.root, self.get_instrument()))
+        self.btn_record = ttk.Button(ctrl, text="动作录制", command=lambda: open_recorder_window(self.root, self.get_instrument()))
         self.btn_record.pack(side="left", padx=4)
+        
+        # 新增：自定义按键映射按钮
+        self.btn_custom_key = ttk.Button(ctrl, text="自定义按键映射", command=self.open_custom_key_map)
+        self.btn_custom_key.pack(side="left", padx=4)
 
         self.lbl_status = ttk.Label(ctrl, text="状态：等待载入乐谱")
         self.lbl_status.pack(side="left", padx=10)
@@ -216,6 +220,28 @@ class BaseApp:
 
         # 添加说明文字
         ttk.Label(key_frame, text="实时显示当前按下的按键 (窗口内)", font=("微软雅黑", 9)).pack(anchor="w", padx=4)
+
+    def open_custom_key_map(self):
+        """打开自定义按键映射编辑器窗口"""
+        # 创建按键映射管理器实例
+        key_map_manager = CustomKeyMap()
+        
+        # 创建新窗口
+        win = tk.Toplevel(self.root)
+        win.title("自定义按键映射")
+        win.transient(self.root)
+        win.grab_set()
+        
+        # 创建按键映射编辑器
+        editor = KeyMapEditor(win, key_map_manager)
+        
+        # 居中显示窗口
+        win.update_idletasks()
+        width = win.winfo_width()
+        height = win.winfo_height()
+        x = (win.winfo_screenwidth() // 2) - (width // 2)
+        y = (win.winfo_screenheight() // 2) - (height // 2)
+        win.geometry(f"{width}x{height}+{x}+{y}")
 
     def open_keycast_settings(self):
         """打开覆盖层设置窗口"""
@@ -348,6 +374,7 @@ class BaseApp:
 
     def _stop_key_listener(self):
         """停止按键监听线程"""
+        self.keycast_overlay.stop_key_listener()
         if not self.key_listener_active:
             return  # 已经停止，避免重复停止
 
@@ -512,12 +539,14 @@ class BaseApp:
                 self.player.resume()
                 self.btn_start.config(text="暂停")
                 self.lbl_status.config(text="演奏中…")
+                self._start_key_listener()
             else:
                 # 进入暂停
                 if hasattr(self.player, 'pause'):
                     self.player.pause()
                     self.btn_start.config(text="继续")
                     self.lbl_status.config(text="已暂停")
+                    self._stop_key_listener()
         except Exception:
             try:
                 self.stop_play()

@@ -86,8 +86,8 @@ def midi_to_lrcp_text(midi_path: str) -> str:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_midi', type=str, default='../example/mid/卡农.mid', help='需要转换的mid文件路径')
-    parser.add_argument('--output_lrcp', type=str, default='../example/lrcp/卡农.lrcp', help='转换后保存的lrcp文件路径')
+    parser.add_argument('--input_midi', type=str, default='example/mid/卡农.mid', help='需要转换的mid文件路径')
+    parser.add_argument('--output_lrcp', type=str, default='example/lrcp/卡农.lrcp', help='转换后保存的lrcp文件路径')
     args = parser.parse_args()
 
     midi_file = args.input_midi

@@ -7,6 +7,7 @@ from src.app import BaseApp
 from src.event import Event
 from src.player import Player
 from utils.parse import parse_score
+from utils.constant import LOW_MAP, MID_MAP, HIGH_MAP, register_key_map_update_callback
 
 
 class SingleApp(BaseApp):
@@ -22,6 +23,9 @@ class SingleApp(BaseApp):
 
         # 监听乐器切换以更新映射说明
         self.instrument_var.trace_add('write', lambda *_: self._render_mapping())
+        
+        # 注册键位映射更新回调函数
+        register_key_map_update_callback(self._render_mapping)
 
     def _clear_mapping(self):
         for w in self._mapping_rows:
@@ -33,17 +37,25 @@ class SingleApp(BaseApp):
 
     def _render_mapping(self):
         self._clear_mapping()
+
         def row(lbl, txt):
             r = ttk.Frame(self.mapping_frame)
             r.pack(fill="x", pady=1)
-            ttk.Label(r, text=lbl, width=10, anchor="w").pack(side="left")
-            ttk.Label(r, text=txt, anchor="w").pack(side="left")
+            ttk.Label(r, text=lbl, width=7, anchor="w").pack(side="left")
+            ttk.Label(r, text=txt, anchor="w", font=('Courier New', 10)).pack(side="left")
             self._mapping_rows.append(r)
         if self.get_instrument() == 'piano':
-            row("低音 L:", "L1-L7 -> a s d f g h j")
-            row("中音 M:", "M1-M7 -> q w e r t y u")
-            row("高音 H:", "H1-H7 -> 1 2 3 4 5 6 7")
-            row("和弦 :", "C Dm Em F G Am G7 -> z x c v b n m")
+            # 使用全局映射变量生成显示文本
+            low_keys = " ".join([LOW_MAP[k].upper() for k in sorted(LOW_MAP.keys())])
+            mid_keys = " ".join([MID_MAP[k].upper() for k in sorted(MID_MAP.keys())])
+            high_keys = " ".join([HIGH_MAP[k].upper() for k in sorted(HIGH_MAP.keys())])
+            
+            row("低音 L:", f"L1 L2 L3 L4 L5 L6 L7 -> {low_keys}")
+            row("中音 M:", f"M1 M2 M3 M4 M5 M6 M7 -> {mid_keys}")
+            row("高音 H:", f"H1 H2 H3 H4 H5 H6 H7 -> {high_keys}")
+            
+            # 确保UI立即更新
+            self.mapping_frame.update_idletasks()
         else:
             row("架子鼓:", "踩镲闭->1  高音吊镲->2  一嗵鼓->3  二嗵鼓->4  叮叮镲->5")
             row("", "踩镲开->Q  军鼓->W  底鼓->E  落地嗵鼓->R  中音吊镲->T")
