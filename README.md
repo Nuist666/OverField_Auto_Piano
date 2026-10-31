@@ -4,6 +4,31 @@
   <img src="https://github.com/user-attachments/assets/18963a74-329e-42a4-9014-8b454a114203" width="200" height="200" />
 </p>
 
+## ⚠️ 模型下载地址变更公告
+
+由于个人域名 `nuist666.top` 即将停止服务，项目中使用的模型镜像下载地址 `mirror-huggingface.nuist666.top` 将不再保证可用。
+
+**受影响功能：** MP3 转 MIDI 功能首次运行时的 AI 模型自动下载。已下载模型的用户不受影响，钢琴及架子鼓自动演奏等其他功能也不受影响。
+
+**解决方法：**
+
+1. 打开 `libs/piano_transcription_inference/inference.py`。
+2. 找到第 98 行附近的 `download_path`。
+3. 将原有地址替换为可用的模型下载地址：
+
+```python
+# 原地址（即将停用）
+download_path = 'https://mirror-huggingface.nuist666.top/note_F13D0.9186.pth'
+
+# 替换为新的模型文件直链
+download_path = 'https://你的模型下载地址/note_F13D0.9186.pth'
+```
+
+也可以手动下载对应的 `.pth` 模型文件，放入项目根目录下的 `models` 文件夹，命名为 `note_F13D0.9186.pth`，即可跳过自动下载。
+
+原始模型来源：[Zenodo](https://zenodo.org/record/4034264)
+
+感谢大家对本项目的支持！
 
 ## 📖 功能介绍
 本脚本由 AI 辅助编写，适用于 《开放空间》 Windows 平台，可以根据指定的乐谱文件，自动模拟键盘输入，在游戏中实现“自动演奏（钢琴/架子鼓）”。
